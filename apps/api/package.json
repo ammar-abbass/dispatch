@@ -1,0 +1,38 @@
+{
+  "name": "@atlas/api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@atlas/config": "workspace:*",
+    "@atlas/db": "workspace:*",
+    "@atlas/logger": "workspace:*",
+    "@atlas/queue": "workspace:*",
+    "@atlas/shared": "workspace:*",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/helmet": "^12.0.0",
+    "@fastify/jwt": "^10.0.0",
+    "@fastify/swagger": "^9.0.0",
+    "@fastify/swagger-ui": "^5.0.0",
+    "bullmq": "^5.76.4",
+    "fastify": "^5.8.5",
+    "fastify-plugin": "^5.0.1",
+    "fastify-type-provider-zod": "^4.0.0",
+    "ioredis": "^5.10.1",
+    "nanoid": "^5.1.9",
+    "prom-client": "^15.1.3",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.0",
+    "tsx": "^4.19.0",
+    "vitest": "^3.1.0"
+  }
+}

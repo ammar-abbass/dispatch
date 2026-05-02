@@ -1,0 +1,49 @@
+{
+  "name": "atlas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.10.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "db:migrate": "pnpm --filter db migrate",
+    "db:generate": "pnpm --filter db generate",
+    "db:seed": "pnpm --filter db seed",
+    "db:studio": "pnpm --filter db studio",
+    "docker:up": "docker-compose up --build",
+    "docker:down": "docker-compose down -v"
+  },
+  "devDependencies": {
+    "@atlas/db": "workspace:*",
+    "@eslint/js": "^9.25.0",
+    "@fastify/jwt": "^10.0.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@types/node": "^22.15.0",
+    "@types/pg": "^8.20.0",
+    "eslint": "^9.25.0",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-prettier": "^5.2.0",
+    "fastify": "^5.8.5",
+    "ioredis": "^5.10.1",
+    "pg": "^8.20.0",
+    "prettier": "^3.5.0",
+    "testcontainers": "^11.14.0",
+    "tsx": "^4.19.0",
+    "turbo": "^2.9.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.31.0",
+    "vitest": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

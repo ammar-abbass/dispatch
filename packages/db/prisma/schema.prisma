@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tenant {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  slug      String   @unique
+  name      String
+  plan      String   @default("free")
+  createdAt DateTime @default(now()) @map("created_at")
+  users     User[]
+  jobDefinitions JobDefinition[]
+  jobExecutions  JobExecution[]
+  executionLogs  ExecutionLog[]
+  jobSteps       JobStep[]
+  auditLogs      AuditLog[]
+
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  tenantId  String   @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  email     String   @unique
+  role      String
+  createdAt DateTime @default(now()) @map("created_at")
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+model JobDefinition {
+  id             String   @id @default(dbgenerated("gen_random_uuid()"))
+  tenantId       String   @map("tenant_id")
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  name           String
+  type           String
+  payloadSchema  Json?    @map("payload_schema")
+  scheduleCron   String?  @map("schedule_cron")
+  retryPolicy    Json     @map("retry_policy")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+  jobExecutions  JobExecution[]
+
+  @@map("job_definitions")
+}
+
+model JobExecution {
+  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  tenantId         String   @map("tenant_id")
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+  jobDefinitionId  String   @map("job_definition_id")
+  jobDefinition    JobDefinition @relation(fields: [jobDefinitionId], references: [id])
+  status           String
+  idempotencyKey   String?  @unique @map("idempotency_key")
+  scheduledFor     DateTime? @map("scheduled_for")
+  startedAt        DateTime? @map("started_at")
+  finishedAt       DateTime? @map("finished_at")
+  errorMessage     String?  @map("error_message")
+  failureType      String?  @map("failure_type")
+  triggeredBy      String   @map("triggered_by")
+  bullJobId        String?  @map("bull_job_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  executionLogs    ExecutionLog[]
+  jobSteps         JobStep[]
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, status])
+  @@index([tenantId, jobDefinitionId])
+  @@map("job_executions")
+}
+
+model ExecutionLog {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  executionId  String   @map("execution_id")
+  execution    JobExecution @relation(fields: [executionId], references: [id])
+  tenantId     String   @map("tenant_id")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  level        String
+  message      String
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@map("execution_logs")
+}
+
+model JobStep {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  tenantId     String   @map("tenant_id")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  executionId  String   @map("execution_id")
+  execution    JobExecution @relation(fields: [executionId], references: [id])
+  stepName     String   @map("step_name")
+  status       String
+  attemptCount Int      @default(0) @map("attempt_count")
+  startedAt    DateTime? @map("started_at")
+  finishedAt   DateTime? @map("finished_at")
+
+  @@map("job_steps")
+}
+
+model AuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  tenantId    String   @map("tenant_id")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  actorId     String?  @map("actor_id")
+  actor       User?    @relation(fields: [actorId], references: [id])
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}

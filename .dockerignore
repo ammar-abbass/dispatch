@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.env
+.env.*
+dist
+coverage
+.turbo
+prompt.md
+*.zip
+.DS_Store
+tests
+docs
