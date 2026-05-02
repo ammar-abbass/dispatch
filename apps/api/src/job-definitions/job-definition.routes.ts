@@ -35,6 +35,11 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
   app.post('/', {
+    schema: {
+      tags: ['Job Definitions'],
+      summary: 'Create a new job definition',
+      body: createSchema,
+    },
     preHandler: app.authorize(['admin']),
   }, async (req, reply) => {
     await checkRateLimit(req.tenantId, 'job-definitions:create');
@@ -78,6 +83,14 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
   });
 
   app.get('/', {
+    schema: {
+      tags: ['Job Definitions'],
+      summary: 'List job definitions',
+      querystring: z.object({
+        page: z.string().optional(),
+        limit: z.string().optional(),
+      }),
+    },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
     const { page = '1', limit = '20' } = req.query as Record<string, string>;
@@ -102,6 +115,11 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
   });
 
   app.get('/:id', {
+    schema: {
+      tags: ['Job Definitions'],
+      summary: 'Get a job definition by ID',
+      params: z.object({ id: z.string().uuid() }),
+    },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
     const { id } = req.params as { id: string };
@@ -114,8 +132,14 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
   });
 
   app.patch('/:id', {
+    schema: {
+      tags: ['Job Definitions'],
+      summary: 'Update a job definition',
+      params: z.object({ id: z.string().uuid() }),
+      body: updateSchema,
+    },
     preHandler: app.authorize(['admin']),
-  }, async (req) => {
+  }, async (req, reply) => {
     await checkRateLimit(req.tenantId, 'job-definitions:update');
     const { id } = req.params as { id: string };
     const body = updateSchema.parse(req.body);
@@ -153,6 +177,11 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
   });
 
   app.delete('/:id', {
+    schema: {
+      tags: ['Job Definitions'],
+      summary: 'Delete a job definition',
+      params: z.object({ id: z.string().uuid() }),
+    },
     preHandler: app.authorize(['admin']),
   }, async (req, reply) => {
     await checkRateLimit(req.tenantId, 'job-definitions:delete');
@@ -181,6 +210,12 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
   });
 
   app.post('/:id/trigger', {
+    schema: {
+      tags: ['Job Definitions'],
+      summary: 'Trigger a job execution manually',
+      params: z.object({ id: z.string().uuid() }),
+      body: z.record(z.unknown()).optional(),
+    },
     preHandler: app.authorize(['admin', 'operator']),
   }, async (req, reply) => {
     await checkRateLimit(req.tenantId, 'job-definitions:trigger');

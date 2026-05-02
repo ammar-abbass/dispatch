@@ -5,6 +5,10 @@ export async function workerRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
   app.get('/', {
+    schema: {
+      tags: ['Workers'],
+      summary: 'List active workers',
+    },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async () => {
     const defaultWorkers = await jobsDefaultQueue.getWorkers();

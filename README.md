@@ -69,6 +69,57 @@ pnpm test:integration
 pnpm test:e2e
 ```
 
+## API Documentation
+
+When the API is running locally, you can access the auto-generated Swagger UI documentation at:
+**[http://127.0.0.1:3000/docs](http://127.0.0.1:3000/docs)**
+
+### Common cURL Examples
+
+Below are examples of the most common API flows. Note: You must replace `YOUR_JWT_TOKEN` with a valid JWT token that contains the `tenantId` claim.
+
+#### 1. Create a Job Definition
+Create a new one-off job definition with a specific retry policy.
+```bash
+curl -X POST http://127.0.0.1:3000/v1/job-definitions \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Send Welcome Email",
+    "type": "one_off",
+    "payloadSchema": { "email": "user@example.com" },
+    "retryPolicy": {
+      "maxAttempts": 3,
+      "backoff": "exponential",
+      "delay": 5000
+    }
+  }'
+```
+
+#### 2. Trigger a Job Manually
+Trigger an execution for a specific job definition using its ID.
+```bash
+curl -X POST http://127.0.0.1:3000/v1/job-definitions/JOB_DEFINITION_ID/trigger \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: unique-key-123" \
+  -d '{"email": "user@example.com"}'
+```
+
+#### 3. Check Execution Status
+Retrieve the current status and details of a specific job execution.
+```bash
+curl -X GET http://127.0.0.1:3000/v1/executions/EXECUTION_ID \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### 4. Replay a Failed or Dead-Lettered Job
+Manually retry an execution that has failed or exhausted all retries.
+```bash
+curl -X POST http://127.0.0.1:3000/v1/executions/EXECUTION_ID/retry \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
 ## Environment Variable Reference
 
 | Variable | Description | Default |

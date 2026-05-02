@@ -6,6 +6,10 @@ export async function queueRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
   app.get('/', {
+    schema: {
+      tags: ['Queues'],
+      summary: 'List queue metrics',
+    },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async () => {
     const queues = [

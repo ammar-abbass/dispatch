@@ -11,6 +11,16 @@ export async function executionRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
   app.get('/', {
+    schema: {
+      tags: ['Executions'],
+      summary: 'List job executions',
+      querystring: z.object({
+        status: z.string().optional(),
+        definitionId: z.string().uuid().optional(),
+        page: z.string().optional(),
+        limit: z.string().optional(),
+      }),
+    },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
     const { status, definitionId, page = '1', limit = '20' } = req.query as Record<string, string>;
@@ -39,6 +49,11 @@ export async function executionRoutes(app: FastifyInstance) {
   });
 
   app.get('/:id', {
+    schema: {
+      tags: ['Executions'],
+      summary: 'Get execution details',
+      params: z.object({ id: z.string().uuid() }),
+    },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
     const { id } = req.params as { id: string };
@@ -54,6 +69,15 @@ export async function executionRoutes(app: FastifyInstance) {
   });
 
   app.get('/:id/logs', {
+    schema: {
+      tags: ['Executions'],
+      summary: 'Get execution logs',
+      params: z.object({ id: z.string().uuid() }),
+      querystring: z.object({
+        page: z.string().optional(),
+        limit: z.string().optional(),
+      }),
+    },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
     const { id } = req.params as { id: string };
@@ -82,6 +106,11 @@ export async function executionRoutes(app: FastifyInstance) {
   });
 
   app.post('/:id/cancel', {
+    schema: {
+      tags: ['Executions'],
+      summary: 'Cancel an execution',
+      params: z.object({ id: z.string().uuid() }),
+    },
     preHandler: app.authorize(['admin', 'operator']),
   }, async (req) => {
     await checkRateLimit(req.tenantId, 'executions:cancel');
@@ -118,6 +147,11 @@ export async function executionRoutes(app: FastifyInstance) {
   });
 
   app.post('/:id/retry', {
+    schema: {
+      tags: ['Executions'],
+      summary: 'Retry a failed execution',
+      params: z.object({ id: z.string().uuid() }),
+    },
     preHandler: app.authorize(['admin', 'operator']),
   }, async (req) => {
     await checkRateLimit(req.tenantId, 'executions:retry');
