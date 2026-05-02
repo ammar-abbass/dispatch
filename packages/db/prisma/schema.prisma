@@ -14,6 +14,7 @@ model Tenant {
   plan      String   @default("free")
   createdAt DateTime @default(now()) @map("created_at")
   users     User[]
+  apiKeys    ApiKey[]
   jobDefinitions JobDefinition[]
   jobExecutions  JobExecution[]
   executionLogs  ExecutionLog[]
@@ -24,15 +25,44 @@ model Tenant {
 }
 
 model User {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  tenantId  String   @map("tenant_id")
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  email     String   @unique
-  role      String
-  createdAt DateTime @default(now()) @map("created_at")
-  auditLogs AuditLog[]
+  id            String         @id @default(dbgenerated("gen_random_uuid()"))
+  tenantId      String         @map("tenant_id")
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  email         String         @unique
+  passwordHash  String?        @map("password_hash")
+  role          String
+  createdAt     DateTime       @default(now()) @map("created_at")
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
+}
+
+model ApiKey {
+  id         String    @id @default(dbgenerated("gen_random_uuid()"))
+  tenantId   String    @map("tenant_id")
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  name       String
+  keyHash    String    @unique @map("key_hash")
+  lastUsedAt DateTime? @map("last_used_at")
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@map("api_keys")
+}
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model JobDefinition {

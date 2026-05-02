@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma, ScopedRepository } from '@atlas/db';
-import { AtlasError, tenantScope } from '@atlas/shared';
+import { AtlasError, tenantScope, paginate } from '@atlas/shared';
 import { jobsDefaultQueue } from '@atlas/queue';
 import { nanoid } from 'nanoid';
 import { auditLog } from '../audit/audit.service.js';
@@ -17,15 +17,14 @@ export async function executionRoutes(app: FastifyInstance) {
       querystring: z.object({
         status: z.string().optional(),
         definitionId: z.string().uuid().optional(),
-        page: z.string().optional(),
+        cursor: z.string().optional(),
         limit: z.string().optional(),
       }),
     },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
-    const { status, definitionId, page = '1', limit = '20' } = req.query as Record<string, string>;
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+    const { status, definitionId, limit: limitStr = '20' } = req.query as Record<string, string>;
+    const limit = Math.min(Number(limitStr), 100);
 
     const repo = new ScopedRepository(prisma, req.tenantId);
 
@@ -34,18 +33,17 @@ export async function executionRoutes(app: FastifyInstance) {
       ...(definitionId ? { jobDefinitionId: definitionId } : {}),
     };
 
-    const [items, count] = await Promise.all([
+    const [items, total] = await Promise.all([
       repo.jobExecutions().findMany({
         where,
-        skip,
-        take,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         include: { jobDefinition: { select: { name: true, type: true } } },
       }),
       repo.jobExecutions().count({ where }),
     ]);
 
-    return { items, total: count, page: Number(page), limit: take };
+    return paginate(items, total, limit);
   });
 
   app.get('/:id', {
@@ -113,7 +111,7 @@ export async function executionRoutes(app: FastifyInstance) {
     },
     preHandler: app.authorize(['admin', 'operator']),
   }, async (req) => {
-    await checkRateLimit(req.tenantId, 'executions:cancel');
+    await checkRateLimit(req, 'executions:cancel');
     const { id } = req.params as { id: string };
 
     const repo = new ScopedRepository(prisma, req.tenantId);
@@ -154,7 +152,7 @@ export async function executionRoutes(app: FastifyInstance) {
     },
     preHandler: app.authorize(['admin', 'operator']),
   }, async (req) => {
-    await checkRateLimit(req.tenantId, 'executions:retry');
+    await checkRateLimit(req, 'executions:retry');
     const { id } = req.params as { id: string };
 
     const execution = await prisma.jobExecution.findFirst({
@@ -217,5 +215,30 @@ export async function executionRoutes(app: FastifyInstance) {
     });
 
     return { retried: true, executionId: newExecution.id };
+  });
+
+  /** GET /v1/executions/:id/steps — list steps for a workflow execution */
+  app.get('/:id/steps', {
+    schema: {
+      tags: ['Executions'],
+      summary: 'List steps for a workflow execution',
+      params: z.object({ id: z.string().uuid() }),
+    },
+    preHandler: app.authorize(['admin', 'operator', 'viewer']),
+  }, async (req) => {
+    const { id } = req.params as { id: string };
+
+    const execution = await prisma.jobExecution.findFirst({
+      where: { id, ...tenantScope(req.tenantId) },
+      select: { id: true },
+    });
+    if (!execution) throw new AtlasError('NOT_FOUND', 'Execution not found', 404);
+
+    const steps = await prisma.jobStep.findMany({
+      where: { executionId: id, tenantId: req.tenantId },
+      orderBy: { startedAt: 'asc' },
+    });
+
+    return { data: steps, meta: { total: steps.length } };
   });
 }

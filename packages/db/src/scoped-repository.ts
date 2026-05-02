@@ -126,4 +126,59 @@ export class ScopedRepository {
         }),
     };
   }
+
+  apiKeys() {
+    return {
+      findMany: (
+        args?: Omit<Prisma.ApiKeyFindManyArgs, 'where'> & {
+          where?: Omit<Prisma.ApiKeyWhereInput, 'tenantId'>;
+        },
+      ) =>
+        this.prisma.apiKey.findMany({
+          ...args,
+          where: { ...args?.where, tenantId: this.tenantId },
+        }),
+      findFirst: (
+        args: Omit<Prisma.ApiKeyFindFirstArgs, 'where'> & {
+          where?: Omit<Prisma.ApiKeyWhereInput, 'tenantId'>;
+        },
+      ) =>
+        this.prisma.apiKey.findFirst({
+          ...args,
+          where: { ...args?.where, tenantId: this.tenantId },
+        }),
+      count: (
+        args?: Omit<Prisma.ApiKeyCountArgs, 'where'> & {
+          where?: Omit<Prisma.ApiKeyWhereInput, 'tenantId'>;
+        },
+      ) =>
+        this.prisma.apiKey.count({
+          ...args,
+          where: { ...args?.where, tenantId: this.tenantId },
+        }),
+    };
+  }
+
+  auditLogs() {
+    return {
+      findMany: (
+        args?: Omit<Prisma.AuditLogFindManyArgs, 'where'> & {
+          where?: Omit<Prisma.AuditLogWhereInput, 'tenantId'>;
+        },
+      ) =>
+        this.prisma.auditLog.findMany({
+          ...args,
+          where: { ...args?.where, tenantId: this.tenantId },
+        }),
+      count: (
+        args?: Omit<Prisma.AuditLogCountArgs, 'where'> & {
+          where?: Omit<Prisma.AuditLogWhereInput, 'tenantId'>;
+        },
+      ) =>
+        this.prisma.auditLog.count({
+          ...args,
+          where: { ...args?.where, tenantId: this.tenantId },
+        }),
+    };
+  }
 }

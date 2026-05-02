@@ -42,7 +42,7 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     },
     preHandler: app.authorize(['admin']),
   }, async (req, reply) => {
-    await checkRateLimit(req.tenantId, 'job-definitions:create');
+    await checkRateLimit(req, 'job-definitions:create');
     const body = createSchema.parse(req.body);
 
     if (body.type === 'recurring' && body.scheduleCron) {
@@ -140,7 +140,7 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     },
     preHandler: app.authorize(['admin']),
   }, async (req, reply) => {
-    await checkRateLimit(req.tenantId, 'job-definitions:update');
+    await checkRateLimit(req, 'job-definitions:update');
     const { id } = req.params as { id: string };
     const body = updateSchema.parse(req.body);
 
@@ -184,7 +184,7 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     },
     preHandler: app.authorize(['admin']),
   }, async (req, reply) => {
-    await checkRateLimit(req.tenantId, 'job-definitions:delete');
+    await checkRateLimit(req, 'job-definitions:delete');
     const { id } = req.params as { id: string };
 
     const repo = new ScopedRepository(prisma, req.tenantId);
@@ -218,7 +218,7 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     },
     preHandler: app.authorize(['admin', 'operator']),
   }, async (req, reply) => {
-    await checkRateLimit(req.tenantId, 'job-definitions:trigger');
+    await checkRateLimit(req, 'job-definitions:trigger');
     const { id } = req.params as { id: string };
     const idempotencyKey = (req.headers['idempotency-key'] as string) ?? nanoid();
 

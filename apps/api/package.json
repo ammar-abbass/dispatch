@@ -15,11 +15,13 @@
     "@atlas/logger": "workspace:*",
     "@atlas/queue": "workspace:*",
     "@atlas/shared": "workspace:*",
+    "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.0",
     "@fastify/helmet": "^12.0.0",
     "@fastify/jwt": "^10.0.0",
     "@fastify/swagger": "^9.0.0",
     "@fastify/swagger-ui": "^5.0.0",
+    "bcryptjs": "^3.0.3",
     "bullmq": "^5.76.4",
     "fastify": "^5.8.5",
     "fastify-plugin": "^5.0.1",
@@ -30,9 +32,10 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^22.15.0",
-    "typescript": "^5.8.0",
     "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
     "vitest": "^3.1.0"
   }
 }

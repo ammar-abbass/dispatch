@@ -15,6 +15,7 @@ export function errorHandler(
         code: error.code,
         message: error.message,
         requestId: _request.id,
+        ...(error.meta ?? {}),
       },
     });
   }
