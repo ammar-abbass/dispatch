@@ -72,16 +72,15 @@ export async function executionRoutes(app: FastifyInstance) {
       summary: 'Get execution logs',
       params: z.object({ id: z.string().uuid() }),
       querystring: z.object({
-        page: z.string().optional(),
+        cursor: z.string().optional(),
         limit: z.string().optional(),
       }),
     },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
     const { id } = req.params as { id: string };
-    const { page = '1', limit = '50' } = req.query as Record<string, string>;
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+    const { limit: limitStr = '50' } = req.query as Record<string, string>;
+    const limit = Math.min(Number(limitStr), 200);
 
     const repo = new ScopedRepository(prisma, req.tenantId);
     const execution = await repo.jobExecutions().findFirst({
@@ -90,17 +89,16 @@ export async function executionRoutes(app: FastifyInstance) {
     });
     if (!execution) throw new AtlasError('NOT_FOUND', 'Execution not found', 404);
 
-    const [items, count] = await Promise.all([
+    const [items, total] = await Promise.all([
       repo.executionLogs().findMany({
         where: { executionId: id },
-        skip,
-        take,
+        take: limit,
         orderBy: { createdAt: 'desc' },
       }),
       repo.executionLogs().count({ where: { executionId: id } }),
     ]);
 
-    return { items, total: count, page: Number(page), limit: take };
+    return paginate(items, total, limit);
   });
 
   app.post('/:id/cancel', {

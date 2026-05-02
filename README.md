@@ -76,48 +76,52 @@ When the API is running locally, you can access the auto-generated Swagger UI do
 
 ### Common cURL Examples
 
-Below are examples of the most common API flows. Note: You must replace `YOUR_JWT_TOKEN` with a valid JWT token that contains the `tenantId` claim.
-
-#### 1. Create a Job Definition
-Create a new one-off job definition with a specific retry policy.
+#### 1. Login and Get an Access Token
 ```bash
-curl -X POST http://127.0.0.1:3000/v1/job-definitions \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+curl -X POST http://127.0.0.1:3000/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Send Welcome Email",
-    "type": "one_off",
-    "payloadSchema": { "email": "user@example.com" },
-    "retryPolicy": {
-      "maxAttempts": 3,
-      "backoff": "exponential",
-      "delay": 5000
-    }
-  }'
+  -d '{"email": "admin@atlas.dev", "password": "changeme"}'
+# Response: { "accessToken": "eyJ...", "expiresIn": 900 }
+# A refresh_token cookie is also set automatically.
 ```
 
-#### 2. Trigger a Job Manually
-Trigger an execution for a specific job definition using its ID.
+#### 2. Trigger a Job
 ```bash
 curl -X POST http://127.0.0.1:3000/v1/job-definitions/JOB_DEFINITION_ID/trigger \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Authorization: Bearer ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: unique-key-123" \
   -d '{"email": "user@example.com"}'
 ```
 
 #### 3. Check Execution Status
-Retrieve the current status and details of a specific job execution.
 ```bash
 curl -X GET http://127.0.0.1:3000/v1/executions/EXECUTION_ID \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -H "Authorization: Bearer ACCESS_TOKEN"
 ```
 
-#### 4. Replay a Failed or Dead-Lettered Job
-Manually retry an execution that has failed or exhausted all retries.
+#### 4. Replay a Dead-Lettered Job
 ```bash
 curl -X POST http://127.0.0.1:3000/v1/executions/EXECUTION_ID/retry \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -H "Authorization: Bearer ACCESS_TOKEN"
+```
+
+#### 5. Create an API Key (M2M)
+```bash
+curl -X POST http://127.0.0.1:3000/v1/api-keys \
+  -H "Authorization: Bearer ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "CI Pipeline Key"}'
+# Response: { "id": "...", "name": "CI Pipeline Key", "key": "atk_...", ... }
+# Save the "key" value — it is shown only once.
+```
+
+#### 6. Use an API Key to Trigger a Job (Machine-to-Machine)
+```bash
+curl -X POST http://127.0.0.1:3000/v1/job-definitions/JOB_DEFINITION_ID/trigger \
+  -H "Authorization: Api-Key atk_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data": "from-ci-pipeline"}'
 ```
 
 ## Environment Variable Reference

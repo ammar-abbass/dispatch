@@ -249,6 +249,9 @@ importers:
       '@prisma/client':
         specifier: ^7.7.0
         version: 7.8.0(prisma@7.8.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3))(typescript@5.9.3)
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -256,6 +259,9 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
     devDependencies:
+      '@types/bcryptjs':
+        specifier: ^3.0.0
+        version: 3.0.0
       '@types/pg':
         specifier: ^8.20.0
         version: 8.20.0

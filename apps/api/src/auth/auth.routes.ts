@@ -3,7 +3,7 @@ import { z } from 'zod';
 import bcryptjs from 'bcryptjs';
 import { prisma } from '@atlas/db';
 import { AtlasError } from '@atlas/shared';
-import { generateRefreshToken, sha256 } from './auth.plugin.js';
+import { generateRefreshToken, sha256 } from './auth.crypto.js';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60; // 15 minutes

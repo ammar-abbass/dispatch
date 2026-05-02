@@ -1,9 +1,8 @@
-import { createHash, randomBytes } from 'crypto';
-import bcryptjs from 'bcryptjs';
 import fp from 'fastify-plugin';
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { prisma } from '@atlas/db';
 import { AtlasError } from '@atlas/shared';
+import { sha256 } from './auth.crypto.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -17,35 +16,6 @@ declare module 'fastify' {
     authenticate: (req: FastifyRequest) => Promise<void>;
     authorize: (roles: string[]) => (req: FastifyRequest) => Promise<void>;
   }
-}
-
-export { bcryptjs };
-
-/**
- * Hash a high-entropy token with SHA-256.
- * Used for API keys and refresh tokens — not for passwords.
- * bcrypt is not appropriate here because these tokens are already high-entropy (256-bit random).
- */
-export function sha256(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
-}
-
-/**
- * Generate a cryptographically secure random token.
- * Returns base64url-encoded bytes prefixed with `atk_`.
- */
-export function generateApiKey(): { raw: string; hash: string } {
-  const raw = `atk_${randomBytes(32).toString('base64url')}`;
-  return { raw, hash: sha256(raw) };
-}
-
-/**
- * Generate a cryptographically secure refresh token.
- * Returns the raw token (stored in httpOnly cookie) and its SHA-256 hash (stored in DB).
- */
-export function generateRefreshToken(): { raw: string; hash: string } {
-  const raw = randomBytes(40).toString('base64url');
-  return { raw, hash: sha256(raw) };
 }
 
 export const authPlugin = fp(async (app: FastifyInstance) => {

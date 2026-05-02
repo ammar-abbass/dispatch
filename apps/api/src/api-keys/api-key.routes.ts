@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma, ScopedRepository } from '@atlas/db';
 import { AtlasError, paginate } from '@atlas/shared';
-import { generateApiKey } from '../auth/auth.plugin.js';
+import { generateApiKey } from '../auth/auth.crypto.js';
 import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
 import { auditLog } from '../audit/audit.service.js';
 

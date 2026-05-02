@@ -2,6 +2,7 @@ import { PrismaClient } from '../src/generated/client/client.js';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { env } from '@atlas/config';
+import bcryptjs from 'bcryptjs';
 
 const connectionString = env.DATABASE_URL;
 const pool = new Pool({ connectionString });
@@ -9,7 +10,12 @@ const adapter = new PrismaPg(pool);
 
 const prisma = new PrismaClient({ adapter });
 
+/** Default dev password — never use in production */
+const DEV_PASSWORD = 'changeme';
+
 async function main() {
+  const passwordHash = await bcryptjs.hash(DEV_PASSWORD, 10);
+
   const tenant = await prisma.tenant.create({
     data: {
       slug: 'dev-tenant',
@@ -22,6 +28,7 @@ async function main() {
     data: {
       tenantId: tenant.id,
       email: 'admin@atlas.dev',
+      passwordHash,
       role: 'admin',
     },
   });

@@ -77,6 +77,7 @@ describe('E2E Flow', () => {
       req.tenantId = tenantId;
       req.userId = user.id;
       req.userRole = 'admin';
+      req.authMethod = 'jwt';
     });
 
     // authorize is a preHandler factory; in tests all roles are allowed
@@ -137,7 +138,7 @@ describe('E2E Flow', () => {
 
     expect(listRes.statusCode).toBe(200);
     const list = JSON.parse(listRes.payload);
-    expect(list.items.length).toBeGreaterThanOrEqual(1);
+    expect(list.data.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should enforce idempotency on duplicate triggers', async () => {

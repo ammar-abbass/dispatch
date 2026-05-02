@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma, ScopedRepository, Prisma } from '@atlas/db';
-import { AtlasError } from '@atlas/shared';
+import { AtlasError, paginate } from '@atlas/shared';
 import { jobsDefaultQueue, flowProducer } from '@atlas/queue';
 import { nanoid } from 'nanoid';
 import { auditLog } from '../audit/audit.service.js';
@@ -87,23 +87,21 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
       tags: ['Job Definitions'],
       summary: 'List job definitions',
       querystring: z.object({
-        page: z.string().optional(),
+        cursor: z.string().optional(),
         limit: z.string().optional(),
       }),
     },
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
-    const { page = '1', limit = '20' } = req.query as Record<string, string>;
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+    const { limit: limitStr = '20' } = req.query as Record<string, string>;
+    const limit = Math.min(Number(limitStr), 100);
 
     const repo = new ScopedRepository(prisma, req.tenantId);
 
-    const [items, count] = await Promise.all([
+    const [items, total] = await Promise.all([
       repo.jobDefinitions().findMany({
         where: { isActive: true },
-        skip,
-        take,
+        take: limit,
         orderBy: { createdAt: 'desc' },
       }),
       repo.jobDefinitions().count({
@@ -111,7 +109,7 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
       }),
     ]);
 
-    return { items, total: count, page: Number(page), limit: take };
+    return paginate(items, total, limit);
   });
 
   app.get('/:id', {
