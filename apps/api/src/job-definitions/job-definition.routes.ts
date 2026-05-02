@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { prisma, ScopedRepository } from '@atlas/db';
-import { AtlasError, tenantScope } from '@atlas/shared';
+import { prisma, ScopedRepository, Prisma } from '@atlas/db';
+import { AtlasError } from '@atlas/shared';
 import { jobsDefaultQueue } from '@atlas/queue';
 import { nanoid } from 'nanoid';
 import { auditLog } from '../audit/audit.service.js';
@@ -55,14 +55,14 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
       }
     }
 
-    const def = await prisma.jobDefinition.create({
+    const repo = new ScopedRepository(prisma, req.tenantId);
+    const def = await repo.jobDefinitions().create({
       data: {
         name: body.name,
         type: body.type,
-        payloadSchema: body.payloadSchema ? (body.payloadSchema as any) : null,
+        payloadSchema: body.payloadSchema ? (body.payloadSchema as Prisma.InputJsonValue) : Prisma.DbNull,
         scheduleCron: body.scheduleCron ?? null,
-        retryPolicy: body.retryPolicy as any,
-        tenantId: req.tenantId,
+        retryPolicy: body.retryPolicy as Prisma.InputJsonValue,
       },
     });
 
@@ -93,8 +93,8 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
         take,
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.jobDefinition.count({
-        where: { ...tenantScope(req.tenantId), isActive: true },
+      repo.jobDefinitions().count({
+        where: { isActive: true },
       }),
     ]);
 
@@ -105,8 +105,9 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
     const { id } = req.params as { id: string };
-    const def = await prisma.jobDefinition.findFirst({
-      where: { id, ...tenantScope(req.tenantId) },
+    const repo = new ScopedRepository(prisma, req.tenantId);
+    const def = await repo.jobDefinitions().findFirst({
+      where: { id },
     });
     if (!def) throw new AtlasError('NOT_FOUND', 'Job definition not found', 404);
     return def;
@@ -123,14 +124,21 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
       validateCron(body.scheduleCron);
     }
 
-    const existing = await prisma.jobDefinition.findFirst({
-      where: { id, ...tenantScope(req.tenantId) },
+    const repo = new ScopedRepository(prisma, req.tenantId);
+    const existing = await repo.jobDefinitions().findFirst({
+      where: { id },
     });
     if (!existing) throw new AtlasError('NOT_FOUND', 'Job definition not found', 404);
 
+    const dataToUpdate: Prisma.JobDefinitionUpdateInput = { updatedAt: new Date() };
+    if (body.name !== undefined) dataToUpdate.name = body.name;
+    if (body.scheduleCron !== undefined) dataToUpdate.scheduleCron = body.scheduleCron;
+    if (body.isActive !== undefined) dataToUpdate.isActive = body.isActive;
+    if (body.retryPolicy !== undefined) dataToUpdate.retryPolicy = body.retryPolicy as Prisma.InputJsonValue;
+
     const updated = await prisma.jobDefinition.update({
       where: { id },
-      data: { ...(body as any), updatedAt: new Date() },
+      data: dataToUpdate,
     });
 
     await auditLog({
@@ -150,8 +158,9 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     await checkRateLimit(req.tenantId, 'job-definitions:delete');
     const { id } = req.params as { id: string };
 
-    const existing = await prisma.jobDefinition.findFirst({
-      where: { id, ...tenantScope(req.tenantId) },
+    const repo = new ScopedRepository(prisma, req.tenantId);
+    const existing = await repo.jobDefinitions().findFirst({
+      where: { id },
     });
     if (!existing) throw new AtlasError('NOT_FOUND', 'Job definition not found', 404);
 
@@ -178,8 +187,9 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     const idempotencyKey = (req.headers['idempotency-key'] as string) ?? nanoid();
 
-    const def = await prisma.jobDefinition.findFirst({
-      where: { id, ...tenantScope(req.tenantId), isActive: true },
+    const repo = new ScopedRepository(prisma, req.tenantId);
+    const def = await repo.jobDefinitions().findFirst({
+      where: { id, isActive: true },
     });
     if (!def) throw new AtlasError('NOT_FOUND', 'Job definition not found', 404);
 
@@ -248,8 +258,9 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     preHandler: app.authorize(['admin', 'operator']),
   }, async (req) => {
     const { id } = req.params as { id: string };
-    const def = await prisma.jobDefinition.findFirst({
-      where: { id, ...tenantScope(req.tenantId), type: 'recurring' },
+    const repo = new ScopedRepository(prisma, req.tenantId);
+    const def = await repo.jobDefinitions().findFirst({
+      where: { id, type: 'recurring' },
     });
     if (!def) throw new AtlasError('NOT_FOUND', 'Recurring job definition not found', 404);
 
@@ -273,8 +284,9 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     preHandler: app.authorize(['admin', 'operator']),
   }, async (req) => {
     const { id } = req.params as { id: string };
-    const def = await prisma.jobDefinition.findFirst({
-      where: { id, ...tenantScope(req.tenantId), type: 'recurring' },
+    const repo = new ScopedRepository(prisma, req.tenantId);
+    const def = await repo.jobDefinitions().findFirst({
+      where: { id, type: 'recurring' },
     });
     if (!def) throw new AtlasError('NOT_FOUND', 'Recurring job definition not found', 404);
 

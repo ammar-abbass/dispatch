@@ -40,6 +40,15 @@ export class ScopedRepository {
           ...args,
           where: { id: args.where.id },
         }),
+      count: (
+        args?: Omit<Prisma.JobDefinitionCountArgs, 'where'> & {
+          where?: Omit<Prisma.JobDefinitionWhereInput, 'tenantId'>;
+        },
+      ) =>
+        this.prisma.jobDefinition.count({
+          ...args,
+          where: { ...args?.where, tenantId: this.tenantId },
+        }),
     };
   }
 

@@ -9,8 +9,10 @@ coverage/
 .idea/
 *.tsbuildinfo
 prisma/generated/
+packages/db/src/generated/client/
 docker-compose.override.yml
 .turbo/
 prompt.md
+spec.md
 *.zip
 .DS_Store

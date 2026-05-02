@@ -42,9 +42,8 @@ export async function executionRoutes(app: FastifyInstance) {
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async (req) => {
     const { id } = req.params as { id: string };
-    const repo = new ScopedRepository(prisma, req.tenantId);
-    const execution = await repo.jobExecutions().findFirst({
-      where: { id },
+    const execution = await prisma.jobExecution.findFirst({
+      where: { id, ...tenantScope(req.tenantId) },
       include: {
         jobDefinition: { select: { name: true, type: true, retryPolicy: true } },
         jobSteps: true,

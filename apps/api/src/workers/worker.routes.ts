@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@atlas/queue';
 
 export async function workerRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
@@ -6,6 +7,16 @@ export async function workerRoutes(app: FastifyInstance) {
   app.get('/', {
     preHandler: app.authorize(['admin', 'operator', 'viewer']),
   }, async () => {
-    return { workers: [] };
+    const defaultWorkers = await jobsDefaultQueue.getWorkers();
+    const workflowWorkers = await jobsWorkflowQueue.getWorkers();
+    const dlqWorkers = await jobsDlqQueue.getWorkers();
+
+    const workers = [
+      ...defaultWorkers.map((w) => ({ ...w, queue: 'jobs-default' })),
+      ...workflowWorkers.map((w) => ({ ...w, queue: 'jobs-workflow' })),
+      ...dlqWorkers.map((w) => ({ ...w, queue: 'jobs-dlq' })),
+    ];
+
+    return { workers };
   });
 }
