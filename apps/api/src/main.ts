@@ -4,7 +4,7 @@ import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
-import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
+import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
 import { env } from '@atlas/config';
 import { rootLogger } from '@atlas/logger';
 import { redis } from '@atlas/queue';
@@ -41,6 +41,7 @@ await app.register(swagger, {
       },
     },
   },
+  transform: jsonSchemaTransform,
 });
 
 await app.register(swaggerUi, { routePrefix: '/docs' });
