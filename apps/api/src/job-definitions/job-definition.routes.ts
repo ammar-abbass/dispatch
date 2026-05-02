@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma, ScopedRepository, Prisma } from '@atlas/db';
 import { AtlasError } from '@atlas/shared';
-import { jobsDefaultQueue } from '@atlas/queue';
+import { jobsDefaultQueue, flowProducer } from '@atlas/queue';
 import { nanoid } from 'nanoid';
 import { auditLog } from '../audit/audit.service.js';
 import { validateCron } from '../validation/cron-validator.js';
@@ -212,30 +212,59 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     });
 
     const bullJobId = `${req.tenantId}:${def.id}:${idempotencyKey}`;
+    const payload = (req.body as Record<string, unknown> | undefined) ?? {};
+    const meta = { correlationId: req.requestId ?? nanoid(), triggeredBy: 'api' };
+    
+    const jobOpts = {
+      jobId: bullJobId,
+      attempts: (def.retryPolicy as { maxAttempts: number }).maxAttempts,
+      backoff: {
+        type: (def.retryPolicy as { backoff: string }).backoff,
+        delay: (def.retryPolicy as { delay: number }).delay,
+      },
+      removeOnComplete: { count: 100 },
+      removeOnFail: false,
+    };
 
-    await jobsDefaultQueue.add(
-      def.name,
-      {
-        executionId: execution.id,
-        tenantId: req.tenantId,
-        jobDefinitionId: def.id,
-        payload: (req.body as Record<string, unknown> | undefined) ?? {},
-        meta: {
-          correlationId: req.requestId ?? nanoid(),
-          triggeredBy: 'api',
+    if (def.type === 'workflow') {
+      const steps = (def.payloadSchema as Record<string, unknown>)?.steps as string[] | undefined;
+      
+      let flowNode: any = {
+        name: def.name,
+        queueName: 'jobs-workflow',
+        data: { executionId: execution.id, tenantId: req.tenantId, jobDefinitionId: def.id, payload, meta },
+        opts: jobOpts,
+      };
+
+      if (steps && Array.isArray(steps) && steps.length > 0) {
+        // Build sequential chain (child -> parent)
+        // BullMQ executes children first. So the first step is the leaf, and the workflow parent is the root.
+        // So: root(workflow) -> child(step N) -> child(step N-1) ... -> leaf(step 1)
+        for (let i = steps.length - 1; i >= 0; i--) {
+          const stepName = steps[i];
+          flowNode = {
+            name: stepName,
+            queueName: 'jobs-default', // execute steps on default queue
+            data: { executionId: execution.id, tenantId: req.tenantId, jobDefinitionId: def.id, stepName, stepIndex: i, payload, meta },
+            opts: { ...jobOpts, jobId: `${bullJobId}:step:${stepName}` },
+            children: [flowNode],
+          };
+        }
+      }
+      await flowProducer.add(flowNode);
+    } else {
+      await jobsDefaultQueue.add(
+        def.name,
+        {
+          executionId: execution.id,
+          tenantId: req.tenantId,
+          jobDefinitionId: def.id,
+          payload,
+          meta,
         },
-      },
-      {
-        jobId: bullJobId,
-        attempts: (def.retryPolicy as { maxAttempts: number }).maxAttempts,
-        backoff: {
-          type: (def.retryPolicy as { backoff: string }).backoff,
-          delay: (def.retryPolicy as { delay: number }).delay,
-        },
-        removeOnComplete: { count: 100 },
-        removeOnFail: false,
-      },
-    );
+        jobOpts
+      );
+    }
 
     await prisma.jobExecution.update({
       where: { id: execution.id },

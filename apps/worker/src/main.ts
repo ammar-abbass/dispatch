@@ -9,6 +9,8 @@ import { jobsDeadLetteredCounter, workerHeartbeatGauge } from './metrics.js';
 const logger = rootLogger.child({ service: 'worker' });
 const workerId = `worker-${process.pid}`;
 
+import { workflowJobHandler } from './handlers/workflow.handler.js';
+
 const defaultWorker = new Worker('jobs-default', defaultJobHandler, {
   connection: redis,
   concurrency: Number(env.WORKER_CONCURRENCY),
@@ -16,7 +18,7 @@ const defaultWorker = new Worker('jobs-default', defaultJobHandler, {
   maxStalledCount: 2,
 });
 
-const workflowWorker = new Worker('jobs-workflow', defaultJobHandler, {
+const workflowWorker = new Worker('jobs-workflow', workflowJobHandler, {
   connection: redis,
   concurrency: Number(env.WORKER_CONCURRENCY),
   stalledInterval: 30_000,

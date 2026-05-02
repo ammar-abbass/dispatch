@@ -1,7 +1,7 @@
 import { Job } from 'bullmq';
 import { prisma } from '@atlas/db';
 import { createLogger } from '@atlas/logger';
-import { JobPayload } from '@atlas/queue';
+import { JobPayload, WorkflowStepPayload } from '@atlas/queue';
 import { classifyFailure } from '../failure-classifier.js';
 import {
   jobsCompletedCounter,
@@ -9,7 +9,13 @@ import {
   jobDurationHistogram,
 } from '../metrics.js';
 
+import { workflowStepHandler } from './workflow.handler.js';
+
 export async function defaultJobHandler(job: Job<JobPayload>): Promise<void> {
+  if ('stepName' in job.data) {
+    return workflowStepHandler(job as unknown as Job<WorkflowStepPayload>);
+  }
+
   const { executionId, tenantId, jobDefinitionId, payload, meta } = job.data;
   const logger = createLogger({
     jobId: job.id ?? 'unknown',
