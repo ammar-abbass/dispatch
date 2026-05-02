@@ -231,6 +231,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@atlas/config':
+        specifier: workspace:*
+        version: link:../config
       '@prisma/adapter-pg':
         specifier: ^7.8.0
         version: 7.8.0
