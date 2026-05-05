@@ -15,6 +15,7 @@ import { env } from '@dispatch/config';
 import { rootLogger } from '@dispatch/logger';
 import { redis } from '@dispatch/queue';
 import { errorHandler } from './error-handler.js';
+import { startMetricsCollection } from './metrics/metrics.js';
 import { authPlugin } from './auth/auth.plugin.js';
 import { authRoutes } from './auth/auth.routes.js';
 import { jobDefinitionRoutes } from './job-definitions/job-definition.routes.js';
@@ -89,6 +90,8 @@ await app.register(apiKeyRoutes, { prefix: '/v1/api-keys' });
 await app.register(auditRoutes, { prefix: '/v1/audit-logs' });
 await app.register(userRoutes, { prefix: '/v1/users' });
 
+const metricsInterval = startMetricsCollection();
+
 async function start() {
   await app.ready();
   await app.listen({ port: Number(env.API_PORT), host: env.API_HOST });
@@ -99,6 +102,7 @@ const signals = ['SIGTERM', 'SIGINT'];
 signals.forEach((signal) => {
   process.on(signal, async () => {
     logger.info({ signal }, 'Shutting down API');
+    clearInterval(metricsInterval);
     await app.close();
     await redis.quit();
     process.exit(0);

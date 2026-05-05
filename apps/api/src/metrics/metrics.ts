@@ -1,4 +1,5 @@
 import { Counter, Gauge, Histogram, register } from 'prom-client';
+import { jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@dispatch/queue';
 
 export const queueDepthGauge = new Gauge({
   name: 'atlas_queue_depth',
@@ -13,6 +14,34 @@ export const jobsActiveGauge = new Gauge({
   labelNames: ['queue'],
   registers: [register],
 });
+
+/**
+ * Collect queue metrics in the background every 15 seconds.
+ * This ensures Prometheus always has fresh data without requiring API calls.
+ */
+export function startMetricsCollection(): ReturnType<typeof setInterval> {
+  const queues = [
+    { name: 'jobs-default', queue: jobsDefaultQueue },
+    { name: 'jobs-workflow', queue: jobsWorkflowQueue },
+    { name: 'jobs-dlq', queue: jobsDlqQueue },
+  ];
+
+  return setInterval(async () => {
+    for (const { name, queue } of queues) {
+      try {
+        const [waiting, active, delayed] = await Promise.all([
+          queue.getWaitingCount(),
+          queue.getActiveCount(),
+          queue.getDelayedCount(),
+        ]);
+        queueDepthGauge.set({ queue: name }, waiting + delayed);
+        jobsActiveGauge.set({ queue: name }, active);
+      } catch {
+        // Silently skip if Redis is temporarily unavailable
+      }
+    }
+  }, 15_000);
+}
 
 export const jobsCompletedCounter = new Counter({
   name: 'atlas_jobs_completed_total',

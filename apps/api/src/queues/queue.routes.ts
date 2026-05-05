@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import { jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@dispatch/queue';
-import { queueDepthGauge, jobsActiveGauge } from '../metrics/metrics.js';
 
 export async function queueRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
@@ -30,9 +29,6 @@ export async function queueRoutes(app: FastifyInstance) {
             queue.getFailedCount(),
             queue.getDelayedCount(),
           ]);
-
-          queueDepthGauge.set({ queue: name }, waiting + delayed);
-          jobsActiveGauge.set({ queue: name }, active);
 
           return {
             name,
