@@ -1,18 +1,16 @@
-import bcryptjs from 'bcryptjs';
 import { prisma } from '@dispatch/db';
 import { DispatchError } from '@dispatch/shared';
+import bcryptjs from 'bcryptjs';
+
 import { generateRefreshToken, sha256 } from './auth.crypto.js';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60; // 15 minutes
 
-export class AuthService {
-  static async login(
-    email: string,
-    password: string,
-  ): Promise<{ user: any; rawRefreshToken: string }> {
+export const AuthService = {
+  async login(email: string, password: string): Promise<{ user: any; rawRefreshToken: string }> {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !user.passwordHash) {
+    if (!user?.passwordHash) {
       throw new DispatchError('AUTHENTICATION_ERROR', 'Invalid credentials', 401);
     }
 
@@ -31,9 +29,9 @@ export class AuthService {
     });
 
     return { user, rawRefreshToken: raw };
-  }
+  },
 
-  static async signup(
+  async signup(
     email: string,
     password: string,
     tenantName: string,
@@ -77,11 +75,9 @@ export class AuthService {
     });
 
     return result;
-  }
+  },
 
-  static async refresh(
-    rawRefreshToken: string,
-  ): Promise<{ user: any; newRawRefreshToken: string }> {
+  async refresh(rawRefreshToken: string): Promise<{ user: any; newRawRefreshToken: string }> {
     const hash = sha256(rawRefreshToken);
     const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hash } });
 
@@ -110,21 +106,21 @@ export class AuthService {
     });
 
     return { user, newRawRefreshToken: newRaw };
-  }
+  },
 
-  static async logout(rawRefreshToken: string): Promise<void> {
+  async logout(rawRefreshToken: string): Promise<void> {
     const hash = sha256(rawRefreshToken);
     await prisma.refreshToken.updateMany({
       where: { tokenHash: hash, revokedAt: null },
       data: { revokedAt: new Date() },
     });
-  }
+  },
 
-  static getAccessTokenTtlSeconds(): number {
+  getAccessTokenTtlSeconds(): number {
     return ACCESS_TOKEN_TTL_SECONDS;
-  }
+  },
 
-  static getRefreshTokenTtlMs(): number {
+  getRefreshTokenTtlMs(): number {
     return REFRESH_TOKEN_TTL_MS;
-  }
-}
+  },
+};

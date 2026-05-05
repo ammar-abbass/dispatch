@@ -1,6 +1,7 @@
-import pino, { Logger } from 'pino';
+import os from 'node:os';
+
 import { env } from '@dispatch/config';
-import os from 'os';
+import pino, { Logger } from 'pino';
 
 export type LogContext = Record<string, string | number | undefined>;
 

@@ -1,7 +1,8 @@
-import { FastifyInstance } from 'fastify';
 import { prisma } from '@dispatch/db';
 import { redis } from '@dispatch/queue';
+import { FastifyInstance } from 'fastify';
 import { register, collectDefaultMetrics } from 'prom-client';
+
 import { apiRequestDurationHistogram } from '../metrics/metrics.js';
 
 collectDefaultMetrics({ register });

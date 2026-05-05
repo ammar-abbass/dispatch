@@ -1,7 +1,8 @@
 import { DispatchError } from '@dispatch/shared';
-import { generateApiKey } from '../auth/auth.crypto.js';
-import { auditLog } from '../audit/audit.service.js';
+
 import { ApiKeyRepository } from './api-key.repository.js';
+import { auditLog } from '../audit/audit.service.js';
+import { generateApiKey } from '../auth/auth.crypto.js';
 
 export class ApiKeyService {
   constructor(private apiKeyRepo: ApiKeyRepository) {}

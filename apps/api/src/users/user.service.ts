@@ -1,9 +1,9 @@
-import bcryptjs from 'bcryptjs';
 import { prisma } from '@dispatch/db';
 import { DispatchError } from '@dispatch/shared';
+import bcryptjs from 'bcryptjs';
 
-export class UserService {
-  static async createUser(
+export const UserService = {
+  async createUser(
     tenantId: string,
     email: string,
     password: string,
@@ -33,5 +33,5 @@ export class UserService {
     });
 
     return user;
-  }
-}
+  },
+};

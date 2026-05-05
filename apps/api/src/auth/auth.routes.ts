@@ -1,9 +1,10 @@
+import { env } from '@dispatch/config';
+import { DispatchError } from '@dispatch/shared';
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { DispatchError } from '@dispatch/shared';
-import { env } from '@dispatch/config';
-import { checkIpRateLimit } from '../rate-limit/rate-limit.service.js';
+
 import { AuthService } from './auth.service.js';
+import { checkIpRateLimit } from '../rate-limit/rate-limit.service.js';
 
 const COOKIE_NAME = 'refresh_token';
 

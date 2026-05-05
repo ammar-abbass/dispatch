@@ -27,7 +27,7 @@ export function encodeCursor(payload: CursorPayload): string {
 
 export function decodeCursor(cursor: string): CursorPayload {
   try {
-    return JSON.parse(Buffer.from(cursor, 'base64url').toString('utf-8')) as CursorPayload;
+    return JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as CursorPayload;
   } catch {
     throw new Error('Invalid cursor');
   }

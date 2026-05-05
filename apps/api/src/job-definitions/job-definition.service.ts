@@ -1,10 +1,11 @@
 import { Prisma } from '@dispatch/db';
-import { DispatchError } from '@dispatch/shared';
 import { jobsDefaultQueue, flowProducer } from '@dispatch/queue';
+import { DispatchError } from '@dispatch/shared';
 import { nanoid } from 'nanoid';
+
+import { JobDefinitionRepository } from './job-definition.repository.js';
 import { auditLog } from '../audit/audit.service.js';
 import { validateCron } from '../validation/cron-validator.js';
-import { JobDefinitionRepository } from './job-definition.repository.js';
 
 export class JobDefinitionService {
   constructor(private jobDefRepo: JobDefinitionRepository) {}
@@ -39,9 +40,7 @@ export class JobDefinitionService {
       tenantId,
       name: data.name,
       type: data.type,
-      payloadSchema: data.payloadSchema
-        ? (data.payloadSchema as Prisma.InputJsonValue)
-        : Prisma.DbNull,
+      payloadSchema: (data.payloadSchema as Prisma.InputJsonValue) || Prisma.DbNull,
       scheduleCron: data.scheduleCron ?? null,
       retryPolicy: data.retryPolicy,
     });

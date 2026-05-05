@@ -26,7 +26,7 @@ export function validateCron(cron: string): void {
   }
 
   if (minute && minute.startsWith('*/') && minute !== '*/1') {
-    const step = parseInt(minute.replace('*/', ''), 10);
+    const step = Number.parseInt(minute.replace('*/', ''), 10);
     if (Number.isNaN(step) || step < 1) {
       throw new DispatchError('VALIDATION_ERROR', 'Invalid cron minute step value', 400);
     }

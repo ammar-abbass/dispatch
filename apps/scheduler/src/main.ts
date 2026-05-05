@@ -1,8 +1,9 @@
-import { setInterval } from 'timers/promises';
+import { setInterval } from 'node:timers/promises';
+
+import { env } from '@dispatch/config';
 import { prisma } from '@dispatch/db';
 import { rootLogger } from '@dispatch/logger';
 import { jobsDefaultQueue } from '@dispatch/queue';
-import { env } from '@dispatch/config';
 import { nanoid } from 'nanoid';
 
 const logger = rootLogger.child({ service: 'scheduler' });
@@ -81,12 +82,11 @@ async function main() {
 
   const intervalMs = Number(env.SCHEDULER_INTERVAL_MS);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for await (const _ of setInterval(intervalMs, undefined, { ref: false })) {
     try {
       await syncSchedules();
-    } catch (err) {
-      logger.error({ err }, 'Schedule sync failed');
+    } catch (error) {
+      logger.error({ err: error }, 'Schedule sync failed');
     }
   }
 }
@@ -97,11 +97,13 @@ async function shutdown(signal: string) {
   process.exit(0);
 }
 
-['SIGTERM', 'SIGINT'].forEach((signal) => {
-  process.on(signal, () => shutdown(signal));
-});
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.on(signal, () => {
+    void shutdown(signal);
+  });
+}
 
-main().catch((err) => {
-  logger.fatal(err);
+main().catch((error: unknown) => {
+  logger.fatal(error);
   process.exit(1);
 });

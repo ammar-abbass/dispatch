@@ -1,6 +1,6 @@
-import { FastifyRequest } from 'fastify';
 import { redis } from '@dispatch/queue';
 import { DispatchError } from '@dispatch/shared';
+import { FastifyRequest } from 'fastify';
 
 /**
  * Rate limiting using a Redis sorted-set sliding window.
@@ -34,7 +34,7 @@ export async function checkRateLimit(req: FastifyRequest, action: string): Promi
       ? `apikey:${req.apiKeyId}`
       : `tenant:${req.tenantId}`;
 
-  const limit = ACTION_LIMITS[action] ?? ACTION_LIMITS['default'] ?? 100;
+  const limit = ACTION_LIMITS[action] ?? ACTION_LIMITS.default ?? 100;
   const now = Date.now();
   const windowStart = now - WINDOW_MS;
   const redisKey = `ratelimit:${subject}:${action}`;
@@ -69,7 +69,7 @@ export async function checkRateLimit(req: FastifyRequest, action: string): Promi
  */
 export async function checkIpRateLimit(req: FastifyRequest, action: string): Promise<void> {
   const ip = req.ip ?? 'unknown';
-  const limit = ACTION_LIMITS[action] ?? ACTION_LIMITS['default'] ?? 100;
+  const limit = ACTION_LIMITS[action] ?? ACTION_LIMITS.default ?? 100;
   const now = Date.now();
   const windowStart = now - WINDOW_MS;
   const redisKey = `ratelimit:ip:${ip}:${action}`;

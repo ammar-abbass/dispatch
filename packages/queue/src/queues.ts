@@ -1,4 +1,5 @@
 import { Queue, FlowProducer } from 'bullmq';
+
 import { redis } from './connection.js';
 
 export const jobsDefaultQueue = new Queue('jobs-default', { connection: redis });

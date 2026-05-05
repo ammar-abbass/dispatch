@@ -1,5 +1,5 @@
-import { Counter, Gauge, Histogram, register } from 'prom-client';
 import { jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@dispatch/queue';
+import { Counter, Gauge, Histogram, register } from 'prom-client';
 
 export const queueDepthGauge = new Gauge({
   name: 'atlas_queue_depth',
@@ -26,20 +26,22 @@ export function startMetricsCollection(): ReturnType<typeof setInterval> {
     { name: 'jobs-dlq', queue: jobsDlqQueue },
   ];
 
-  return setInterval(async () => {
-    for (const { name, queue } of queues) {
-      try {
-        const [waiting, active, delayed] = await Promise.all([
-          queue.getWaitingCount(),
-          queue.getActiveCount(),
-          queue.getDelayedCount(),
-        ]);
-        queueDepthGauge.set({ queue: name }, waiting + delayed);
-        jobsActiveGauge.set({ queue: name }, active);
-      } catch {
-        // Silently skip if Redis is temporarily unavailable
+  return setInterval(() => {
+    void (async () => {
+      for (const { name, queue } of queues) {
+        try {
+          const [waiting, active, delayed] = await Promise.all([
+            queue.getWaitingCount(),
+            queue.getActiveCount(),
+            queue.getDelayedCount(),
+          ]);
+          queueDepthGauge.set({ queue: name }, waiting + delayed);
+          jobsActiveGauge.set({ queue: name }, active);
+        } catch {
+          // Silently skip if Redis is temporarily unavailable
+        }
       }
-    }
+    })();
   }, 15_000);
 }
 

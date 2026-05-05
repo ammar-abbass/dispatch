@@ -1,7 +1,10 @@
 import { Job } from 'bullmq';
+
 import { prisma } from '@dispatch/db';
 import { createLogger } from '@dispatch/logger';
-import { JobPayload } from '@dispatch/queue';
+import { JobPayload, WorkflowStepPayload } from '@dispatch/queue';
+
+import { classifyFailure } from '../failure-classifier.js';
 import { jobsCompletedCounter, jobDurationHistogram } from '../metrics.js';
 
 export async function workflowJobHandler(job: Job<JobPayload>): Promise<void> {
@@ -44,9 +47,6 @@ export async function workflowJobHandler(job: Job<JobPayload>): Promise<void> {
 
   logger.info({ durationSec }, 'Workflow completed');
 }
-
-import { WorkflowStepPayload } from '@dispatch/queue';
-import { classifyFailure } from '../failure-classifier.js';
 
 export async function workflowStepHandler(job: Job<WorkflowStepPayload>): Promise<void> {
   const { executionId, tenantId, stepName, stepIndex, meta } = job.data;

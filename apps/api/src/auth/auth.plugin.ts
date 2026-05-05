@@ -1,7 +1,8 @@
-import fp from 'fastify-plugin';
-import { FastifyInstance, FastifyRequest } from 'fastify';
 import { prisma } from '@dispatch/db';
 import { DispatchError } from '@dispatch/shared';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import fp from 'fastify-plugin';
+
 import { sha256 } from './auth.crypto.js';
 
 declare module 'fastify' {
@@ -34,8 +35,8 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
         req.userId = decoded.sub;
         req.userRole = decoded.role;
         req.authMethod = 'jwt';
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : '';
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : '';
         if (message.includes('expired')) {
           throw new DispatchError('AUTHENTICATION_ERROR', 'Token has expired', 401, {
             code: 'TOKEN_EXPIRED',

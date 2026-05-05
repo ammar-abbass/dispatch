@@ -1,7 +1,7 @@
-import { FastifyInstance } from 'fastify';
-import { z } from 'zod';
 import { prisma, ScopedRepository } from '@dispatch/db';
 import { paginate } from '@dispatch/shared';
+import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 
 export async function auditRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);

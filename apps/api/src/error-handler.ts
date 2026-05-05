@@ -1,6 +1,6 @@
-import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
-import { DispatchError } from '@dispatch/shared';
 import { rootLogger } from '@dispatch/logger';
+import { DispatchError } from '@dispatch/shared';
+import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
 const logger = rootLogger.child({ service: 'api' });
 
@@ -11,7 +11,7 @@ export function errorHandler(error: FastifyError, _request: FastifyRequest, repl
         code: error.code,
         message: error.message,
         requestId: _request.id,
-        ...(error.meta ?? {}),
+        ...error.meta,
       },
     });
   }

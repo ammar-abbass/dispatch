@@ -1,10 +1,10 @@
-import { Job } from 'bullmq';
 import { prisma } from '@dispatch/db';
 import { createLogger } from '@dispatch/logger';
 import { JobPayload, WorkflowStepPayload } from '@dispatch/queue';
+import { Job } from 'bullmq';
+
 import { classifyFailure } from '../failure-classifier.js';
 import { jobsCompletedCounter, jobsFailedCounter, jobDurationHistogram } from '../metrics.js';
-
 import { workflowStepHandler } from './workflow.handler.js';
 
 export async function defaultJobHandler(job: Job<JobPayload>): Promise<void> {

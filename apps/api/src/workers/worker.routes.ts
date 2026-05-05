@@ -1,5 +1,5 @@
-import { FastifyInstance } from 'fastify';
 import { jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@dispatch/queue';
+import { FastifyInstance } from 'fastify';
 
 export async function workerRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);

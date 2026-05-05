@@ -1,15 +1,16 @@
 import { Worker } from 'bullmq';
+
 import { env } from '@dispatch/config';
+import { prisma } from '@dispatch/db';
 import { rootLogger } from '@dispatch/logger';
 import { redis, jobsDlqQueue } from '@dispatch/queue';
-import { prisma } from '@dispatch/db';
+
 import { defaultJobHandler } from './handlers/default.handler.js';
+import { workflowJobHandler } from './handlers/workflow.handler.js';
 import { jobsDeadLetteredCounter, workerHeartbeatGauge } from './metrics.js';
 
 const logger = rootLogger.child({ service: 'worker' });
 const workerId = `worker-${process.pid}`;
-
-import { workflowJobHandler } from './handlers/workflow.handler.js';
 
 const defaultWorker = new Worker('jobs-default', defaultJobHandler, {
   connection: redis,
@@ -64,7 +65,7 @@ const heartbeatInterval = setInterval(() => {
   workerHeartbeatGauge.set({ worker_id: workerId }, Date.now() / 1000);
 }, 10_000);
 
-[defaultWorker, workflowWorker, dlqWorker].forEach((worker) => {
+for (const worker of [defaultWorker, workflowWorker, dlqWorker]) {
   worker.on('completed', (job) => {
     logger.info({ jobId: job.id, queue: worker.name }, 'Worker completed job');
   });
@@ -77,8 +78,8 @@ const heartbeatInterval = setInterval(() => {
         jobsDeadLetteredCounter.inc({ queue: worker.name });
         jobsDlqQueue
           .add(job.name, job.data, { ...(job.id ? { jobId: job.id } : {}) })
-          .catch((e: Error) => {
-            logger.error({ err: e }, 'Failed to move job to DLQ');
+          .catch((error: unknown) => {
+            logger.error({ err: error }, 'Failed to move job to DLQ');
           });
       } else {
         logger.warn(
@@ -88,7 +89,7 @@ const heartbeatInterval = setInterval(() => {
       }
     }
   });
-});
+}
 
 logger.info({ workerId, concurrency: env.WORKER_CONCURRENCY }, 'Workers started');
 
@@ -111,6 +112,8 @@ async function shutdown(signal: string) {
   process.exit(0);
 }
 
-['SIGTERM', 'SIGINT'].forEach((signal) => {
-  process.on(signal, () => shutdown(signal));
-});
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.on(signal, () => {
+    void shutdown(signal);
+  });
+}

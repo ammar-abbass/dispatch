@@ -1,10 +1,11 @@
+import { paginate } from '@dispatch/shared';
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { paginate } from '@dispatch/shared';
-import { validateCron } from '../validation/cron-validator.js';
-import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
-import { JobDefinitionService } from './job-definition.service.js';
+
 import { JobDefinitionRepository } from './job-definition.repository.js';
+import { JobDefinitionService } from './job-definition.service.js';
+import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
+import { validateCron } from '../validation/cron-validator.js';
 
 const createSchema = z
   .object({
@@ -15,7 +16,7 @@ const createSchema = z
     retryPolicy: z.object({
       maxAttempts: z.number().int().min(1).max(20),
       backoff: z.enum(['fixed', 'exponential']),
-      delay: z.number().int().min(100).max(3600000),
+      delay: z.number().int().min(100).max(3_600_000),
     }),
   })
   .strict();
@@ -27,7 +28,7 @@ const updateSchema = z
       .object({
         maxAttempts: z.number().int().min(1).max(20),
         backoff: z.enum(['fixed', 'exponential']),
-        delay: z.number().int().min(100).max(3600000),
+        delay: z.number().int().min(100).max(3_600_000),
       })
       .optional(),
     scheduleCron: z.string().optional(),
@@ -160,14 +161,21 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
     async (req, reply) => {
       await checkRateLimit(req, 'job-definitions:trigger');
       const { id } = req.params as { id: string };
-      const body = req.body as { idempotencyKey?: string; payload?: Record<string, unknown> };
+      const body = (req.body ?? {}) as {
+        idempotencyKey?: string;
+        payload?: Record<string, unknown>;
+      };
+
+      // Idempotency key can be sent as header or body field
+      const idempotencyKey =
+        (req.headers['idempotency-key'] as string | undefined) ?? body.idempotencyKey;
 
       const execution = await jobDefService.triggerJobDefinition(
         req.tenantId,
         req.userId,
         id,
         req.requestId,
-        body.idempotencyKey,
+        idempotencyKey,
         body.payload,
       );
 

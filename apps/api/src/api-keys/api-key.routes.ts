@@ -1,9 +1,10 @@
+import { paginate } from '@dispatch/shared';
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { paginate } from '@dispatch/shared';
-import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
-import { ApiKeyService } from './api-key.service.js';
+
 import { ApiKeyRepository } from './api-key.repository.js';
+import { ApiKeyService } from './api-key.service.js';
+import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
 
 const createSchema = z
   .object({

@@ -1,6 +1,7 @@
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import * as dotenv from 'dotenv';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

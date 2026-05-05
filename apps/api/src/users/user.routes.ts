@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+
 import { UserService } from './user.service.js';
 import { auditLog } from '../audit/audit.service.js';
 

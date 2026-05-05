@@ -1,31 +1,32 @@
-import Fastify from 'fastify';
+import { env } from '@dispatch/config';
+import { rootLogger } from '@dispatch/logger';
+import { redis } from '@dispatch/queue';
+import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
-import cookie from '@fastify/cookie';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import Fastify from 'fastify';
 import {
   serializerCompiler,
   validatorCompiler,
   jsonSchemaTransform,
 } from 'fastify-type-provider-zod';
 import { nanoid } from 'nanoid';
-import { env } from '@dispatch/config';
-import { rootLogger } from '@dispatch/logger';
-import { redis } from '@dispatch/queue';
-import { errorHandler } from './error-handler.js';
-import { startMetricsCollection } from './metrics/metrics.js';
-import { authPlugin } from './auth/auth.plugin.js';
-import { authRoutes } from './auth/auth.routes.js';
-import { jobDefinitionRoutes } from './job-definitions/job-definition.routes.js';
-import { executionRoutes } from './executions/execution.routes.js';
-import { queueRoutes } from './queues/queue.routes.js';
-import { workerRoutes } from './workers/worker.routes.js';
-import { healthRoutes } from './health/health.routes.js';
+
 import { apiKeyRoutes } from './api-keys/api-key.routes.js';
 import { auditRoutes } from './audit/audit.routes.js';
+import { authPlugin } from './auth/auth.plugin.js';
+import { authRoutes } from './auth/auth.routes.js';
+import { errorHandler } from './error-handler.js';
+import { executionRoutes } from './executions/execution.routes.js';
+import { healthRoutes } from './health/health.routes.js';
+import { jobDefinitionRoutes } from './job-definitions/job-definition.routes.js';
+import { startMetricsCollection } from './metrics/metrics.js';
+import { queueRoutes } from './queues/queue.routes.js';
 import { userRoutes } from './users/user.routes.js';
+import { workerRoutes } from './workers/worker.routes.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -37,7 +38,7 @@ const logger = rootLogger.child({ service: 'api' });
 
 const app = Fastify({
   loggerInstance: logger as any,
-  bodyLimit: 65536,
+  bodyLimit: 65_536,
   genReqId: () => nanoid(),
 });
 
@@ -102,17 +103,18 @@ async function start() {
 }
 
 const signals = ['SIGTERM', 'SIGINT'];
-signals.forEach((signal) => {
-  process.on(signal, async () => {
+for (const signal of signals) {
+  process.on(signal, () => {
     logger.info({ signal }, 'Shutting down API');
     clearInterval(metricsInterval);
-    await app.close();
-    await redis.quit();
-    process.exit(0);
+    void app
+      .close()
+      .then(() => redis.quit())
+      .then(() => process.exit(0));
   });
-});
+}
 
-start().catch((err) => {
-  logger.error(err);
+start().catch((error: unknown) => {
+  logger.error(error);
   process.exit(1);
 });
