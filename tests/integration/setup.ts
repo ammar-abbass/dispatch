@@ -1,9 +1,11 @@
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { PrismaClient } from '@dispatch/db';
 import IORedis from 'ioredis';
+import { Pool } from 'pg';
 
 let postgresContainer: StartedTestContainer;
 let redisContainer: StartedTestContainer;
+let pgPool: Pool;
 
 export let prisma: PrismaClient;
 export let redis: IORedis;
@@ -44,8 +46,8 @@ export async function setupTestContainers() {
 
   const { Pool } = await import('pg');
   const { PrismaPg } = await import('@prisma/adapter-pg');
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const adapter = new PrismaPg(pool);
+  pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const adapter = new PrismaPg(pgPool);
 
   prisma = new PrismaClient({ adapter });
   redis = new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
@@ -54,6 +56,7 @@ export async function setupTestContainers() {
 export async function teardownTestContainers() {
   if (prisma) await prisma.$disconnect();
   if (redis) await redis.quit();
+  if (pgPool) await pgPool.end();
   if (postgresContainer) await postgresContainer.stop();
   if (redisContainer) await redisContainer.stop();
 }
