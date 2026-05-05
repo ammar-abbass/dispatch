@@ -7,7 +7,7 @@ export class UserService {
     tenantId: string,
     email: string,
     password: string,
-    role: 'admin' | 'operator' | 'viewer'
+    role: 'admin' | 'operator' | 'viewer',
   ) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {

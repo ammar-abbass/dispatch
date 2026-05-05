@@ -1,4 +1,4 @@
-import { prisma, ScopedRepository, Prisma } from '@dispatch/db';
+import { Prisma } from '@dispatch/db';
 import { DispatchError } from '@dispatch/shared';
 import { jobsDefaultQueue, flowProducer } from '@dispatch/queue';
 import { nanoid } from 'nanoid';
@@ -29,7 +29,7 @@ export class JobDefinitionService {
     }
 
     if (data.type === 'workflow' && data.payloadSchema) {
-      const steps = (data.payloadSchema as Record<string, unknown>)?.steps;
+      const steps = data.payloadSchema?.steps;
       if (Array.isArray(steps) && steps.length > 10) {
         throw new DispatchError('VALIDATION_ERROR', 'Workflow depth capped at 10 steps', 400);
       }
@@ -43,7 +43,7 @@ export class JobDefinitionService {
         ? (data.payloadSchema as Prisma.InputJsonValue)
         : Prisma.DbNull,
       scheduleCron: data.scheduleCron ?? null,
-      retryPolicy: data.retryPolicy as Prisma.InputJsonValue,
+      retryPolicy: data.retryPolicy,
     });
 
     await auditLog({
@@ -96,8 +96,7 @@ export class JobDefinitionService {
     if (data.name !== undefined) dataToUpdate.name = data.name;
     if (data.scheduleCron !== undefined) dataToUpdate.scheduleCron = data.scheduleCron;
     if (data.isActive !== undefined) dataToUpdate.isActive = data.isActive;
-    if (data.retryPolicy !== undefined)
-      dataToUpdate.retryPolicy = data.retryPolicy as Prisma.InputJsonValue;
+    if (data.retryPolicy !== undefined) dataToUpdate.retryPolicy = data.retryPolicy;
 
     const updated = await this.jobDefRepo.update(id, dataToUpdate);
 

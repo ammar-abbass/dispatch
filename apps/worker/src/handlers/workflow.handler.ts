@@ -49,7 +49,7 @@ import { WorkflowStepPayload } from '@dispatch/queue';
 import { classifyFailure } from '../failure-classifier.js';
 
 export async function workflowStepHandler(job: Job<WorkflowStepPayload>): Promise<void> {
-  const { executionId, tenantId, stepName, stepIndex, payload, meta } = job.data;
+  const { executionId, tenantId, stepName, stepIndex, meta } = job.data;
   const logger = createLogger({
     jobId: job.id ?? 'unknown',
     executionId,
@@ -108,7 +108,10 @@ export async function workflowStepHandler(job: Job<WorkflowStepPayload>): Promis
     const failureType = classifyFailure(error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-    logger.warn({ attempt: job.attemptsMade + 1, failureType, errorMessage }, 'Workflow step failed');
+    logger.warn(
+      { attempt: job.attemptsMade + 1, failureType, errorMessage },
+      'Workflow step failed',
+    );
 
     const exhausted = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
 

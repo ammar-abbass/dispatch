@@ -1,4 +1,3 @@
-import { prisma, ScopedRepository } from '@dispatch/db';
 import { DispatchError } from '@dispatch/shared';
 import { generateApiKey } from '../auth/auth.crypto.js';
 import { auditLog } from '../audit/audit.service.js';

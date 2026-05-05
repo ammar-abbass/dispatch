@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import { env } from '@dispatch/config';
 import { rootLogger } from '@dispatch/logger';
-import { redis, jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@dispatch/queue';
+import { redis, jobsDlqQueue } from '@dispatch/queue';
 import { prisma } from '@dispatch/db';
 import { defaultJobHandler } from './handlers/default.handler.js';
 import { jobsDeadLetteredCounter, workerHeartbeatGauge } from './metrics.js';

@@ -4,11 +4,7 @@ import { rootLogger } from '@dispatch/logger';
 
 const logger = rootLogger.child({ service: 'api' });
 
-export function errorHandler(
-  error: FastifyError,
-  _request: FastifyRequest,
-  reply: FastifyReply,
-) {
+export function errorHandler(error: FastifyError, _request: FastifyRequest, reply: FastifyReply) {
   if (error instanceof DispatchError) {
     return reply.code(error.statusCode).send({
       error: {

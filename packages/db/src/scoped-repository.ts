@@ -30,7 +30,11 @@ export class ScopedRepository {
           ...args,
           where: { ...args.where, tenantId: this.tenantId },
         }),
-      create: (args: Omit<Prisma.JobDefinitionCreateArgs, 'data'> & { data: Omit<Prisma.JobDefinitionCreateInput, 'tenant'> }) =>
+      create: (
+        args: Omit<Prisma.JobDefinitionCreateArgs, 'data'> & {
+          data: Omit<Prisma.JobDefinitionCreateInput, 'tenant'>;
+        },
+      ) =>
         this.prisma.jobDefinition.create({
           ...args,
           data: { ...args.data, tenant: { connect: { id: this.tenantId } } },
@@ -76,7 +80,11 @@ export class ScopedRepository {
         this.prisma.jobExecution.findFirst({
           where: { id: args.where.id, tenantId: this.tenantId },
         }),
-      create: (args: Omit<Prisma.JobExecutionCreateArgs, 'data'> & { data: Omit<Prisma.JobExecutionCreateInput, 'tenant'> }) =>
+      create: (
+        args: Omit<Prisma.JobExecutionCreateArgs, 'data'> & {
+          data: Omit<Prisma.JobExecutionCreateInput, 'tenant'>;
+        },
+      ) =>
         this.prisma.jobExecution.create({
           ...args,
           data: { ...args.data, tenant: { connect: { id: this.tenantId } } },
@@ -110,7 +118,11 @@ export class ScopedRepository {
           ...args,
           where: { ...args.where, tenantId: this.tenantId },
         }),
-      create: (args: Omit<Prisma.ExecutionLogCreateArgs, 'data'> & { data: Omit<Prisma.ExecutionLogCreateInput, 'tenant'> }) =>
+      create: (
+        args: Omit<Prisma.ExecutionLogCreateArgs, 'data'> & {
+          data: Omit<Prisma.ExecutionLogCreateInput, 'tenant'>;
+        },
+      ) =>
         this.prisma.executionLog.create({
           ...args,
           data: { ...args.data, tenant: { connect: { id: this.tenantId } } },

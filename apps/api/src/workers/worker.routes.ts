@@ -4,23 +4,27 @@ import { jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@dispatch/que
 export async function workerRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
-  app.get('/', {
-    schema: {
-      tags: ['Workers'],
-      summary: 'List active workers',
+  app.get(
+    '/',
+    {
+      schema: {
+        tags: ['Workers'],
+        summary: 'List active workers',
+      },
+      preHandler: app.authorize(['admin', 'operator', 'viewer']),
     },
-    preHandler: app.authorize(['admin', 'operator', 'viewer']),
-  }, async () => {
-    const defaultWorkers = await jobsDefaultQueue.getWorkers();
-    const workflowWorkers = await jobsWorkflowQueue.getWorkers();
-    const dlqWorkers = await jobsDlqQueue.getWorkers();
+    async () => {
+      const defaultWorkers = await jobsDefaultQueue.getWorkers();
+      const workflowWorkers = await jobsWorkflowQueue.getWorkers();
+      const dlqWorkers = await jobsDlqQueue.getWorkers();
 
-    const workers = [
-      ...defaultWorkers.map((w) => ({ ...w, queue: 'jobs-default' })),
-      ...workflowWorkers.map((w) => ({ ...w, queue: 'jobs-workflow' })),
-      ...dlqWorkers.map((w) => ({ ...w, queue: 'jobs-dlq' })),
-    ];
+      const workers = [
+        ...defaultWorkers.map((w) => ({ ...w, queue: 'jobs-default' })),
+        ...workflowWorkers.map((w) => ({ ...w, queue: 'jobs-workflow' })),
+        ...dlqWorkers.map((w) => ({ ...w, queue: 'jobs-dlq' })),
+      ];
 
-    return { workers };
-  });
+      return { workers };
+    },
+  );
 }

@@ -1,10 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { Prisma } from '@dispatch/db';
-import { DispatchError, paginate } from '@dispatch/shared';
-import { jobsDefaultQueue, flowProducer } from '@dispatch/queue';
-import { nanoid } from 'nanoid';
-import { auditLog } from '../audit/audit.service.js';
+import { paginate } from '@dispatch/shared';
 import { validateCron } from '../validation/cron-validator.js';
 import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
 import { JobDefinitionService } from './job-definition.service.js';
@@ -115,7 +111,7 @@ export async function jobDefinitionRoutes(app: FastifyInstance) {
       },
       preHandler: app.authorize(['admin']),
     },
-    async (req, reply) => {
+    async (req, _reply) => {
       await checkRateLimit(req, 'job-definitions:update');
       const { id } = req.params as { id: string };
       const body = updateSchema.parse(req.body);

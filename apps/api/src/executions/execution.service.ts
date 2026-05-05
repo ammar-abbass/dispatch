@@ -1,4 +1,3 @@
-import { prisma, ScopedRepository } from '@dispatch/db';
 import { DispatchError, tenantScope } from '@dispatch/shared';
 import { jobsDefaultQueue } from '@dispatch/queue';
 import { nanoid } from 'nanoid';
@@ -9,7 +8,6 @@ export class ExecutionService {
   constructor(private executionRepo: ExecutionRepository) {}
 
   async listExecutions(tenantId: string, limit: number, status?: string, definitionId?: string) {
-
     const where = {
       ...(status ? { status } : {}),
       ...(definitionId ? { jobDefinitionId: definitionId } : {}),
@@ -30,7 +28,7 @@ export class ExecutionService {
       {
         jobDefinition: { select: { name: true, type: true, retryPolicy: true } },
         jobSteps: true,
-      }
+      },
     );
     if (!execution) throw new DispatchError('NOT_FOUND', 'Execution not found', 404);
     return execution;
@@ -79,11 +77,15 @@ export class ExecutionService {
   async retryExecution(tenantId: string, userId: string, id: string, requestId?: string) {
     const execution = await this.executionRepo.findFirst(
       { id, ...tenantScope(tenantId) },
-      { jobDefinition: true }
+      { jobDefinition: true },
     );
     if (!execution) throw new DispatchError('NOT_FOUND', 'Execution not found', 404);
     if (!['failed', 'dead_lettered'].includes(execution.status)) {
-      throw new DispatchError('CONFLICT_ERROR', 'Only failed or dead-lettered executions can be retried', 409);
+      throw new DispatchError(
+        'CONFLICT_ERROR',
+        'Only failed or dead-lettered executions can be retried',
+        409,
+      );
     }
 
     const newExecution = await this.executionRepo.create({

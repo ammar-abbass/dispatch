@@ -13,27 +13,31 @@ export async function userRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
   /** POST /v1/users */
-  app.post('/', {
-    schema: {
-      tags: ['Users'],
-      summary: 'Create a new user within the current tenant',
-      body: createUserSchema,
+  app.post(
+    '/',
+    {
+      schema: {
+        tags: ['Users'],
+        summary: 'Create a new user within the current tenant',
+        body: createUserSchema,
+      },
+      preHandler: app.authorize(['admin']),
     },
-    preHandler: app.authorize(['admin']),
-  }, async (req, reply) => {
-    const { email, password, role } = createUserSchema.parse(req.body);
+    async (req, reply) => {
+      const { email, password, role } = createUserSchema.parse(req.body);
 
-    const user = await UserService.createUser(req.tenantId, email, password, role);
+      const user = await UserService.createUser(req.tenantId, email, password, role);
 
-    await auditLog({
-      tenantId: req.tenantId,
-      actorId: req.userId,
-      action: 'user.created',
-      entityType: 'user',
-      entityId: user.id,
-      metadata: { role, email },
-    });
+      await auditLog({
+        tenantId: req.tenantId,
+        actorId: req.userId,
+        action: 'user.created',
+        entityType: 'user',
+        entityId: user.id,
+        metadata: { role, email },
+      });
 
-    return reply.code(201).send(user);
-  });
+      return reply.code(201).send(user);
+    },
+  );
 }

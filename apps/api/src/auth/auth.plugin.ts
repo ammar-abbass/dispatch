@@ -37,7 +37,9 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : '';
         if (message.includes('expired')) {
-          throw new DispatchError('AUTHENTICATION_ERROR', 'Token has expired', 401, { code: 'TOKEN_EXPIRED' });
+          throw new DispatchError('AUTHENTICATION_ERROR', 'Token has expired', 401, {
+            code: 'TOKEN_EXPIRED',
+          });
         }
         throw new DispatchError('AUTHENTICATION_ERROR', 'Invalid or missing token', 401);
       }

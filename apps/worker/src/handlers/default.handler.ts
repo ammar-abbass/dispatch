@@ -101,7 +101,7 @@ export async function defaultJobHandler(job: Job<JobPayload>): Promise<void> {
 }
 
 async function simulateWork(
-  jobDefinitionId: string,
+  _jobDefinitionId: string,
   _payload: Record<string, unknown>,
 ): Promise<void> {
   // Placeholder for actual job logic
