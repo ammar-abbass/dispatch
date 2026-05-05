@@ -53,7 +53,7 @@ await app.register(authPlugin);
 await app.register(swagger, {
   openapi: {
     info: {
-      title: 'Atlas API',
+      title: 'Dispatch API',
       version: '1.0.0',
       description: 'Distributed job scheduling platform',
     },
@@ -63,6 +63,8 @@ await app.register(swagger, {
         apiKey: { type: 'apiKey', in: 'header', name: 'Authorization' },
       },
     },
+    // Default security: most routes require authentication
+    security: [{ bearerAuth: [] }, { apiKey: [] }],
   },
   transform: jsonSchemaTransform,
 });

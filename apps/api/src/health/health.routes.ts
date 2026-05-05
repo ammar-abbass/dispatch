@@ -15,20 +15,53 @@ export async function healthRoutes(app: FastifyInstance) {
     );
   });
 
-  app.get('/health', async () => ({ status: 'ok' }));
+  app.get(
+    '/health',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Liveness probe',
+        // Public endpoint — no authentication required
+        security: [],
+      },
+    },
+    async () => ({ status: 'ok' }),
+  );
 
-  app.get('/ready', async () => {
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-      await redis.ping();
-      return { status: 'ready' };
-    } catch {
-      return { status: 'not_ready' };
-    }
-  });
+  app.get(
+    '/ready',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Readiness probe (checks Postgres + Redis)',
+        // Public endpoint — no authentication required
+        security: [],
+      },
+    },
+    async () => {
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+        await redis.ping();
+        return { status: 'ready' };
+      } catch {
+        return { status: 'not_ready' };
+      }
+    },
+  );
 
-  app.get('/metrics', async (_req, reply) => {
-    const metrics = await register.metrics();
-    return reply.type('text/plain').send(metrics);
-  });
+  app.get(
+    '/metrics',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Prometheus metrics endpoint',
+        // Public endpoint — no authentication required
+        security: [],
+      },
+    },
+    async (_req, reply) => {
+      const metrics = await register.metrics();
+      return reply.type('text/plain').send(metrics);
+    },
+  );
 }
