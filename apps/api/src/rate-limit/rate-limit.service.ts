@@ -1,6 +1,6 @@
 import { FastifyRequest } from 'fastify';
-import { redis } from '@atlas/queue';
-import { AtlasError } from '@atlas/shared';
+import { redis } from '@dispatch/queue';
+import { DispatchError } from '@dispatch/shared';
 
 /**
  * Rate limiting using a Redis sorted-set sliding window.
@@ -52,6 +52,6 @@ export async function checkRateLimit(req: FastifyRequest, action: string): Promi
   const count = (results?.[2]?.[1] as number) ?? 0;
 
   if (count > limit) {
-    throw new AtlasError('RATE_LIMITED', `Rate limit exceeded for ${action}. Try again later.`, 429);
+    throw new DispatchError('RATE_LIMITED', `Rate limit exceeded for ${action}. Try again later.`, 429);
   }
 }

@@ -8,7 +8,7 @@ importers:
 
   .:
     devDependencies:
-      '@atlas/db':
+      '@dispatch/db':
         specifier: workspace:*
         version: link:packages/db
       '@eslint/js':
@@ -38,6 +38,9 @@ importers:
       fastify:
         specifier: ^5.8.5
         version: 5.8.5
+      fastify-type-provider-zod:
+        specifier: ^4.0.2
+        version: 4.0.2(fastify@5.8.5)(zod@3.25.76)
       ioredis:
         specifier: ^5.10.1
         version: 5.10.1
@@ -65,22 +68,25 @@ importers:
       vitest:
         specifier: ^3.1.0
         version: 3.2.4(@types/node@22.19.17)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
 
   apps/api:
     dependencies:
-      '@atlas/config':
+      '@dispatch/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@atlas/db':
+      '@dispatch/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@atlas/logger':
+      '@dispatch/logger':
         specifier: workspace:*
         version: link:../../packages/logger
-      '@atlas/queue':
+      '@dispatch/queue':
         specifier: workspace:*
         version: link:../../packages/queue
-      '@atlas/shared':
+      '@dispatch/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@fastify/cookie':
@@ -147,16 +153,16 @@ importers:
 
   apps/scheduler:
     dependencies:
-      '@atlas/config':
+      '@dispatch/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@atlas/db':
+      '@dispatch/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@atlas/logger':
+      '@dispatch/logger':
         specifier: workspace:*
         version: link:../../packages/logger
-      '@atlas/queue':
+      '@dispatch/queue':
         specifier: workspace:*
         version: link:../../packages/queue
       bullmq:
@@ -187,19 +193,19 @@ importers:
 
   apps/worker:
     dependencies:
-      '@atlas/config':
+      '@dispatch/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@atlas/db':
+      '@dispatch/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@atlas/logger':
+      '@dispatch/logger':
         specifier: workspace:*
         version: link:../../packages/logger
-      '@atlas/queue':
+      '@dispatch/queue':
         specifier: workspace:*
         version: link:../../packages/queue
-      '@atlas/shared':
+      '@dispatch/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       bullmq:
@@ -240,7 +246,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@atlas/config':
+      '@dispatch/config':
         specifier: workspace:*
         version: link:../config
       '@prisma/adapter-pg':
@@ -277,7 +283,7 @@ importers:
 
   packages/logger:
     dependencies:
-      '@atlas/config':
+      '@dispatch/config':
         specifier: workspace:*
         version: link:../config
       pino:
@@ -296,10 +302,10 @@ importers:
 
   packages/queue:
     dependencies:
-      '@atlas/config':
+      '@dispatch/config':
         specifier: workspace:*
         version: link:../config
-      '@atlas/logger':
+      '@dispatch/logger':
         specifier: workspace:*
         version: link:../logger
       bullmq:

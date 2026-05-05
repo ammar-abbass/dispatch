@@ -1,4 +1,4 @@
-# Atlas Architecture
+# Dispatch Architecture
 
 ## System Diagram
 
@@ -42,11 +42,11 @@ graph LR
 - Deduplicates: skips if a waiting execution already exists for the definition
 
 ### Shared Packages
-- `@atlas/db` — Prisma client and schema
-- `@atlas/queue` — BullMQ connection, queue definitions, Zod job schemas
-- `@atlas/logger` — Pino factory with structured context
-- `@atlas/config` — Zod-validated environment variables
-- `@atlas/shared` — Result type, AtlasError, tenant scope helpers
+- `@dispatch/db` — Prisma client and schema
+- `@dispatch/queue` — BullMQ connection, queue definitions, Zod job schemas
+- `@dispatch/logger` — Pino factory with structured context
+- `@dispatch/config` — Zod-validated environment variables
+- `@dispatch/shared` — Result type, DispatchError, tenant scope helpers
 
 ## Data Flow: Trigger → Execute → Verify
 

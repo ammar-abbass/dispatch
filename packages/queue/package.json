@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/queue",
+  "name": "@dispatch/queue",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -13,8 +13,8 @@
     "bullmq": "^5.76.4",
     "ioredis": "^5.10.1",
     "zod": "^3.25.0",
-    "@atlas/config": "workspace:*",
-    "@atlas/logger": "workspace:*"
+    "@dispatch/config": "workspace:*",
+    "@dispatch/logger": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

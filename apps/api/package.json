@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/api",
+  "name": "@dispatch/api",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -10,11 +10,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@atlas/config": "workspace:*",
-    "@atlas/db": "workspace:*",
-    "@atlas/logger": "workspace:*",
-    "@atlas/queue": "workspace:*",
-    "@atlas/shared": "workspace:*",
+    "@dispatch/config": "workspace:*",
+    "@dispatch/db": "workspace:*",
+    "@dispatch/logger": "workspace:*",
+    "@dispatch/queue": "workspace:*",
+    "@dispatch/shared": "workspace:*",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.0",
     "@fastify/helmet": "^12.0.0",

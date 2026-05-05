@@ -1,20 +1,20 @@
-# Atlas
+# Dispatch
 
 > Production-grade distributed task scheduling and workflow orchestration platform built with Node.js, BullMQ, and PostgreSQL.
 
-## What Problem Does Atlas Solve?
+## What Problem Does Dispatch Solve?
 
-Atlas provides a robust, multi-tenant background job scheduling system. It handles one-off, delayed, recurring (cron), and multi-step workflow jobs with built-in retry policies, dead-letter queues, idempotency, and comprehensive observability.
+Dispatch provides a robust, multi-tenant background job scheduling system. It handles one-off, delayed, recurring (cron), and multi-step workflow jobs with built-in retry policies, dead-letter queues, idempotency, and comprehensive observability.
 
 ## Why BullMQ Over Alternatives?
 
-| Concern | BullMQ | Agenda | pg-boss | Temporal |
-|---------|--------|--------|---------|----------|
-| Redis-backed | Yes | No (Mongo) | Yes (Postgres) | Yes (Custom) |
-| Flows/Workflows | Yes | No | Limited | Yes |
-| Retry & DLQ | Native | Basic | Basic | Advanced |
-| TypeScript | First-class | Good | Good | Good |
-| Operational Complexity | Low | Low | Low | High |
+| Concern                | BullMQ      | Agenda     | pg-boss        | Temporal     |
+| ---------------------- | ----------- | ---------- | -------------- | ------------ |
+| Redis-backed           | Yes         | No (Mongo) | Yes (Postgres) | Yes (Custom) |
+| Flows/Workflows        | Yes         | No         | Limited        | Yes          |
+| Retry & DLQ            | Native      | Basic      | Basic          | Advanced     |
+| TypeScript             | First-class | Good       | Good           | Good         |
+| Operational Complexity | Low         | Low        | Low            | High         |
 
 BullMQ provides the best balance of features, performance, and operational simplicity for a v1 scheduling platform without requiring a dedicated orchestration cluster.
 
@@ -39,19 +39,20 @@ BullMQ provides the best balance of features, performance, and operational simpl
 pnpm install
 
 # 2. Start infrastructure
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
 
 # 3. Set up database
 pnpm db:migrate
 pnpm db:seed
 
 # 4. Start all services (in separate terminals)
-pnpm --filter @atlas/api dev
-pnpm --filter @atlas/worker dev
-pnpm --filter @atlas/scheduler dev
+pnpm --filter @dispatch/api dev
+pnpm --filter @dispatch/worker dev
+pnpm --filter @dispatch/scheduler dev
 ```
 
 Or start everything with Docker Compose:
+
 ```bash
 docker-compose up --build
 ```
@@ -77,6 +78,7 @@ When the API is running locally, you can access the auto-generated Swagger UI do
 ### Common cURL Examples
 
 #### 1. Login and Get an Access Token
+
 ```bash
 curl -X POST http://127.0.0.1:3000/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -86,6 +88,7 @@ curl -X POST http://127.0.0.1:3000/v1/auth/login \
 ```
 
 #### 2. Trigger a Job
+
 ```bash
 curl -X POST http://127.0.0.1:3000/v1/job-definitions/JOB_DEFINITION_ID/trigger \
   -H "Authorization: Bearer ACCESS_TOKEN" \
@@ -95,18 +98,21 @@ curl -X POST http://127.0.0.1:3000/v1/job-definitions/JOB_DEFINITION_ID/trigger 
 ```
 
 #### 3. Check Execution Status
+
 ```bash
 curl -X GET http://127.0.0.1:3000/v1/executions/EXECUTION_ID \
   -H "Authorization: Bearer ACCESS_TOKEN"
 ```
 
 #### 4. Replay a Dead-Lettered Job
+
 ```bash
 curl -X POST http://127.0.0.1:3000/v1/executions/EXECUTION_ID/retry \
   -H "Authorization: Bearer ACCESS_TOKEN"
 ```
 
 #### 5. Create an API Key (M2M)
+
 ```bash
 curl -X POST http://127.0.0.1:3000/v1/api-keys \
   -H "Authorization: Bearer ACCESS_TOKEN" \
@@ -117,6 +123,7 @@ curl -X POST http://127.0.0.1:3000/v1/api-keys \
 ```
 
 #### 6. Use an API Key to Trigger a Job (Machine-to-Machine)
+
 ```bash
 curl -X POST http://127.0.0.1:3000/v1/job-definitions/JOB_DEFINITION_ID/trigger \
   -H "Authorization: Api-Key atk_YOUR_API_KEY" \
@@ -126,18 +133,18 @@ curl -X POST http://127.0.0.1:3000/v1/job-definitions/JOB_DEFINITION_ID/trigger 
 
 ## Environment Variable Reference
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Runtime environment | `development` |
-| `DATABASE_URL` | PostgreSQL connection string | — |
-| `REDIS_URL` | Redis connection string | — |
-| `JWT_SECRET` | HS256 signing secret | — |
-| `API_PORT` | HTTP server port | `3000` |
-| `API_HOST` | HTTP server host | `0.0.0.0` |
-| `LOG_LEVEL` | Pino log level | `info` |
-| `METRICS_PORT` | Prometheus metrics port | `9091` |
-| `WORKER_CONCURRENCY` | Concurrent jobs per worker | `5` |
-| `SCHEDULER_INTERVAL_MS` | Schedule sync interval | `60000` |
+| Variable                | Description                  | Default       |
+| ----------------------- | ---------------------------- | ------------- |
+| `NODE_ENV`              | Runtime environment          | `development` |
+| `DATABASE_URL`          | PostgreSQL connection string | —             |
+| `REDIS_URL`             | Redis connection string      | —             |
+| `JWT_SECRET`            | HS256 signing secret         | —             |
+| `API_PORT`              | HTTP server port             | `3000`        |
+| `API_HOST`              | HTTP server host             | `0.0.0.0`     |
+| `LOG_LEVEL`             | Pino log level               | `info`        |
+| `METRICS_PORT`          | Prometheus metrics port      | `9091`        |
+| `WORKER_CONCURRENCY`    | Concurrent jobs per worker   | `5`           |
+| `SCHEDULER_INTERVAL_MS` | Schedule sync interval       | `60000`       |
 
 ## Architecture
 

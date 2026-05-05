@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-Atlas has three distinct runtime concerns: HTTP API, job execution, and schedule synchronization. These could be deployed as separate microservices.
+Dispatch has three distinct runtime concerns: HTTP API, job execution, and schedule synchronization. These could be deployed as separate microservices.
 
 ## Decision
 Use a **modular monolith** with three runnable processes (`api`, `worker`, `scheduler`) sharing a single codebase and internal packages.

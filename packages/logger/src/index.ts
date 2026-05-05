@@ -1,5 +1,5 @@
 import pino, { Logger } from 'pino';
-import { env } from '@atlas/config';
+import { env } from '@dispatch/config';
 import os from 'os';
 
 export type LogContext = Record<string, string | number | undefined>;

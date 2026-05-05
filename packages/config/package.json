@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/config",
+  "name": "@dispatch/config",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.js",

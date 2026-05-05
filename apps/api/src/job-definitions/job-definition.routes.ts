@@ -1,370 +1,211 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { prisma, ScopedRepository, Prisma } from '@atlas/db';
-import { AtlasError, paginate } from '@atlas/shared';
-import { jobsDefaultQueue, flowProducer } from '@atlas/queue';
+import { ScopedRepository, Prisma } from '@dispatch/db';
+import { DispatchError, paginate } from '@dispatch/shared';
+import { jobsDefaultQueue, flowProducer } from '@dispatch/queue';
 import { nanoid } from 'nanoid';
 import { auditLog } from '../audit/audit.service.js';
 import { validateCron } from '../validation/cron-validator.js';
 import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
+import { JobDefinitionService } from './job-definition.service.js';
+import { JobDefinitionRepository } from './job-definition.repository.js';
+import { prisma } from '@dispatch/db';
 
-const createSchema = z.object({
-  name: z.string().min(1).max(200),
-  type: z.enum(['one_off', 'delayed', 'recurring', 'workflow']),
-  payloadSchema: z.record(z.unknown()).optional(),
-  scheduleCron: z.string().optional(),
-  retryPolicy: z.object({
-    maxAttempts: z.number().int().min(1).max(20),
-    backoff: z.enum(['fixed', 'exponential']),
-    delay: z.number().int().min(100).max(3600000),
-  }),
-}).strict();
+const createSchema = z
+  .object({
+    name: z.string().min(1).max(200),
+    type: z.enum(['one_off', 'delayed', 'recurring', 'workflow']),
+    payloadSchema: z.any().optional(),
+    scheduleCron: z.string().optional(),
+    retryPolicy: z.object({
+      maxAttempts: z.number().int().min(1).max(20),
+      backoff: z.enum(['fixed', 'exponential']),
+      delay: z.number().int().min(100).max(3600000),
+    }),
+  })
+  .strict();
 
-const updateSchema = z.object({
-  name: z.string().min(1).max(200).optional(),
-  retryPolicy: z.object({
-    maxAttempts: z.number().int().min(1).max(20),
-    backoff: z.enum(['fixed', 'exponential']),
-    delay: z.number().int().min(100).max(3600000),
-  }).optional(),
-  scheduleCron: z.string().optional(),
-  isActive: z.boolean().optional(),
-}).strict();
+const updateSchema = z
+  .object({
+    name: z.string().min(1).max(200).optional(),
+    retryPolicy: z
+      .object({
+        maxAttempts: z.number().int().min(1).max(20),
+        backoff: z.enum(['fixed', 'exponential']),
+        delay: z.number().int().min(100).max(3600000),
+      })
+      .optional(),
+    scheduleCron: z.string().optional(),
+    isActive: z.boolean().optional(),
+  })
+  .strict();
 
 export async function jobDefinitionRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
-  app.post('/', {
-    schema: {
-      tags: ['Job Definitions'],
-      summary: 'Create a new job definition',
-      body: createSchema,
+  const jobDefRepo = new JobDefinitionRepository(prisma);
+  const jobDefService = new JobDefinitionService(jobDefRepo);
+
+  app.post(
+    '/',
+    {
+      schema: {
+        tags: ['Job Definitions'],
+        summary: 'Create a new job definition',
+        body: createSchema,
+      },
+      preHandler: app.authorize(['admin']),
     },
-    preHandler: app.authorize(['admin']),
-  }, async (req, reply) => {
-    await checkRateLimit(req, 'job-definitions:create');
-    const body = createSchema.parse(req.body);
+    async (req, reply) => {
+      await checkRateLimit(req, 'job-definitions:create');
+      const body = createSchema.parse(req.body);
 
-    if (body.type === 'recurring' && body.scheduleCron) {
-      validateCron(body.scheduleCron);
-    }
+      const result = await jobDefService.createJobDefinition(req.tenantId, req.userId, body);
 
-    if (body.type === 'recurring' && !body.scheduleCron) {
-      throw new AtlasError('VALIDATION_ERROR', 'Recurring jobs require scheduleCron', 400);
-    }
+      return reply.code(201).send(result);
+    },
+  );
 
-    if (body.type === 'workflow' && body.payloadSchema) {
-      const steps = (body.payloadSchema as Record<string, unknown>)?.steps;
-      if (Array.isArray(steps) && steps.length > 10) {
-        throw new AtlasError('VALIDATION_ERROR', 'Workflow depth capped at 10 steps', 400);
+  app.get(
+    '/',
+    {
+      schema: {
+        tags: ['Job Definitions'],
+        summary: 'List job definitions',
+        querystring: z.object({
+          cursor: z.string().optional(),
+          limit: z.string().optional(),
+        }),
+      },
+      preHandler: app.authorize(['admin', 'operator', 'viewer']),
+    },
+    async (req) => {
+      const { limit: limitStr = '20' } = req.query as Record<string, string>;
+      const limit = Math.min(Number(limitStr), 100);
+
+      const { items, total } = await jobDefService.listJobDefinitions(req.tenantId, limit);
+
+      return paginate(items, total, limit);
+    },
+  );
+
+  app.get(
+    '/:id',
+    {
+      schema: {
+        tags: ['Job Definitions'],
+        summary: 'Get a job definition by ID',
+        params: z.object({ id: z.string().uuid() }),
+      },
+      preHandler: app.authorize(['admin', 'operator', 'viewer']),
+    },
+    async (req) => {
+      const { id } = req.params as { id: string };
+
+      return jobDefService.getJobDefinition(req.tenantId, id);
+    },
+  );
+
+  app.patch(
+    '/:id',
+    {
+      schema: {
+        tags: ['Job Definitions'],
+        summary: 'Update a job definition',
+        params: z.object({ id: z.string().uuid() }),
+        body: updateSchema,
+      },
+      preHandler: app.authorize(['admin']),
+    },
+    async (req, reply) => {
+      await checkRateLimit(req, 'job-definitions:update');
+      const { id } = req.params as { id: string };
+      const body = updateSchema.parse(req.body);
+
+      if (body.scheduleCron) {
+        validateCron(body.scheduleCron);
       }
-    }
 
-    const repo = new ScopedRepository(prisma, req.tenantId);
-    const def = await repo.jobDefinitions().create({
-      data: {
-        name: body.name,
-        type: body.type,
-        payloadSchema: body.payloadSchema ? (body.payloadSchema as Prisma.InputJsonValue) : Prisma.DbNull,
-        scheduleCron: body.scheduleCron ?? null,
-        retryPolicy: body.retryPolicy as Prisma.InputJsonValue,
+      const result = await jobDefService.updateJobDefinition(req.tenantId, req.userId, id, body);
+
+      return result;
+    },
+  );
+
+  app.delete(
+    '/:id',
+    {
+      schema: {
+        tags: ['Job Definitions'],
+        summary: 'Delete a job definition',
+        params: z.object({ id: z.string().uuid() }),
       },
-    });
-
-    await auditLog({
-      tenantId: req.tenantId,
-      actorId: req.userId,
-      action: 'job_definition.created',
-      entityType: 'job_definition',
-      entityId: def.id,
-    });
-
-    return reply.code(201).send(def);
-  });
-
-  app.get('/', {
-    schema: {
-      tags: ['Job Definitions'],
-      summary: 'List job definitions',
-      querystring: z.object({
-        cursor: z.string().optional(),
-        limit: z.string().optional(),
-      }),
+      preHandler: app.authorize(['admin']),
     },
-    preHandler: app.authorize(['admin', 'operator', 'viewer']),
-  }, async (req) => {
-    const { limit: limitStr = '20' } = req.query as Record<string, string>;
-    const limit = Math.min(Number(limitStr), 100);
+    async (req, reply) => {
+      await checkRateLimit(req, 'job-definitions:delete');
+      const { id } = req.params as { id: string };
 
-    const repo = new ScopedRepository(prisma, req.tenantId);
+      await jobDefService.deleteJobDefinition(req.tenantId, req.userId, id);
 
-    const [items, total] = await Promise.all([
-      repo.jobDefinitions().findMany({
-        where: { isActive: true },
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      repo.jobDefinitions().count({
-        where: { isActive: true },
-      }),
-    ]);
-
-    return paginate(items, total, limit);
-  });
-
-  app.get('/:id', {
-    schema: {
-      tags: ['Job Definitions'],
-      summary: 'Get a job definition by ID',
-      params: z.object({ id: z.string().uuid() }),
+      return reply.code(204).send();
     },
-    preHandler: app.authorize(['admin', 'operator', 'viewer']),
-  }, async (req) => {
-    const { id } = req.params as { id: string };
-    const repo = new ScopedRepository(prisma, req.tenantId);
-    const def = await repo.jobDefinitions().findFirst({
-      where: { id },
-    });
-    if (!def) throw new AtlasError('NOT_FOUND', 'Job definition not found', 404);
-    return def;
-  });
+  );
 
-  app.patch('/:id', {
-    schema: {
-      tags: ['Job Definitions'],
-      summary: 'Update a job definition',
-      params: z.object({ id: z.string().uuid() }),
-      body: updateSchema,
-    },
-    preHandler: app.authorize(['admin']),
-  }, async (req, reply) => {
-    await checkRateLimit(req, 'job-definitions:update');
-    const { id } = req.params as { id: string };
-    const body = updateSchema.parse(req.body);
-
-    if (body.scheduleCron) {
-      validateCron(body.scheduleCron);
-    }
-
-    const repo = new ScopedRepository(prisma, req.tenantId);
-    const existing = await repo.jobDefinitions().findFirst({
-      where: { id },
-    });
-    if (!existing) throw new AtlasError('NOT_FOUND', 'Job definition not found', 404);
-
-    const dataToUpdate: Prisma.JobDefinitionUpdateInput = { updatedAt: new Date() };
-    if (body.name !== undefined) dataToUpdate.name = body.name;
-    if (body.scheduleCron !== undefined) dataToUpdate.scheduleCron = body.scheduleCron;
-    if (body.isActive !== undefined) dataToUpdate.isActive = body.isActive;
-    if (body.retryPolicy !== undefined) dataToUpdate.retryPolicy = body.retryPolicy as Prisma.InputJsonValue;
-
-    const updated = await prisma.jobDefinition.update({
-      where: { id },
-      data: dataToUpdate,
-    });
-
-    await auditLog({
-      tenantId: req.tenantId,
-      actorId: req.userId,
-      action: 'job_definition.updated',
-      entityType: 'job_definition',
-      entityId: updated.id,
-    });
-
-    return updated;
-  });
-
-  app.delete('/:id', {
-    schema: {
-      tags: ['Job Definitions'],
-      summary: 'Delete a job definition',
-      params: z.object({ id: z.string().uuid() }),
-    },
-    preHandler: app.authorize(['admin']),
-  }, async (req, reply) => {
-    await checkRateLimit(req, 'job-definitions:delete');
-    const { id } = req.params as { id: string };
-
-    const repo = new ScopedRepository(prisma, req.tenantId);
-    const existing = await repo.jobDefinitions().findFirst({
-      where: { id },
-    });
-    if (!existing) throw new AtlasError('NOT_FOUND', 'Job definition not found', 404);
-
-    await prisma.jobDefinition.update({
-      where: { id },
-      data: { isActive: false, updatedAt: new Date() },
-    });
-
-    await auditLog({
-      tenantId: req.tenantId,
-      actorId: req.userId,
-      action: 'job_definition.deleted',
-      entityType: 'job_definition',
-      entityId: id,
-    });
-
-    return reply.code(204).send();
-  });
-
-  app.post('/:id/trigger', {
-    schema: {
-      tags: ['Job Definitions'],
-      summary: 'Trigger a job execution manually',
-      params: z.object({ id: z.string().uuid() }),
-      body: z.record(z.unknown()).optional(),
-    },
-    preHandler: app.authorize(['admin', 'operator']),
-  }, async (req, reply) => {
-    await checkRateLimit(req, 'job-definitions:trigger');
-    const { id } = req.params as { id: string };
-    const idempotencyKey = (req.headers['idempotency-key'] as string) ?? nanoid();
-
-    const repo = new ScopedRepository(prisma, req.tenantId);
-    const def = await repo.jobDefinitions().findFirst({
-      where: { id, isActive: true },
-    });
-    if (!def) throw new AtlasError('NOT_FOUND', 'Job definition not found', 404);
-
-    const existingExecution = await prisma.jobExecution.findUnique({
-      where: { idempotencyKey },
-    });
-    if (existingExecution) {
-      throw new AtlasError('CONFLICT_ERROR', 'Execution already exists for this idempotency key', 409);
-    }
-
-    const execution = await prisma.jobExecution.create({
-      data: {
-        tenantId: req.tenantId,
-        jobDefinitionId: def.id,
-        status: 'scheduled',
-        idempotencyKey,
-        triggeredBy: 'api',
-        scheduledFor: new Date(),
+  app.post(
+    '/:id/trigger',
+    {
+      schema: {
+        tags: ['Job Definitions'],
+        summary: 'Trigger a job execution manually',
+        params: z.object({ id: z.string().uuid() }),
+        body: z.any().optional(),
       },
-    });
+      preHandler: app.authorize(['admin', 'operator']),
+    },
+    async (req, reply) => {
+      await checkRateLimit(req, 'job-definitions:trigger');
+      const { id } = req.params as { id: string };
+      const body = req.body as { idempotencyKey?: string; payload?: Record<string, unknown> };
 
-    const bullJobId = `${req.tenantId}:${def.id}:${idempotencyKey}`;
-    const payload = (req.body as Record<string, unknown> | undefined) ?? {};
-    const meta = { correlationId: req.requestId ?? nanoid(), triggeredBy: 'api' };
-    
-    const jobOpts = {
-      jobId: bullJobId,
-      attempts: (def.retryPolicy as { maxAttempts: number }).maxAttempts,
-      backoff: {
-        type: (def.retryPolicy as { backoff: string }).backoff,
-        delay: (def.retryPolicy as { delay: number }).delay,
-      },
-      removeOnComplete: { count: 100 },
-      removeOnFail: false,
-    };
-
-    if (def.type === 'workflow') {
-      const steps = (def.payloadSchema as Record<string, unknown>)?.steps as string[] | undefined;
-      
-      let flowNode: any = {
-        name: def.name,
-        queueName: 'jobs-workflow',
-        data: { executionId: execution.id, tenantId: req.tenantId, jobDefinitionId: def.id, payload, meta },
-        opts: jobOpts,
-      };
-
-      if (steps && Array.isArray(steps) && steps.length > 0) {
-        // Build sequential chain (child -> parent)
-        // BullMQ executes children first. So the first step is the leaf, and the workflow parent is the root.
-        // So: root(workflow) -> child(step N) -> child(step N-1) ... -> leaf(step 1)
-        for (let i = steps.length - 1; i >= 0; i--) {
-          const stepName = steps[i];
-          flowNode = {
-            name: stepName,
-            queueName: 'jobs-default', // execute steps on default queue
-            data: { executionId: execution.id, tenantId: req.tenantId, jobDefinitionId: def.id, stepName, stepIndex: i, payload, meta },
-            opts: { ...jobOpts, jobId: `${bullJobId}:step:${stepName}` },
-            children: [flowNode],
-          };
-        }
-      }
-      await flowProducer.add(flowNode);
-    } else {
-      await jobsDefaultQueue.add(
-        def.name,
-        {
-          executionId: execution.id,
-          tenantId: req.tenantId,
-          jobDefinitionId: def.id,
-          payload,
-          meta,
-        },
-        jobOpts
+      const execution = await jobDefService.triggerJobDefinition(
+        req.tenantId,
+        req.userId,
+        id,
+        req.requestId,
+        body.idempotencyKey,
+        body.payload,
       );
-    }
 
-    await prisma.jobExecution.update({
-      where: { id: execution.id },
-      data: { bullJobId, status: 'waiting' },
-    });
+      return reply.code(202).send(execution);
+    },
+  );
 
-    await auditLog({
-      tenantId: req.tenantId,
-      actorId: req.userId,
-      action: 'job.triggered',
-      entityType: 'job_execution',
-      entityId: execution.id,
-      metadata: { jobDefinitionId: def.id, idempotencyKey },
-    });
+  app.post(
+    '/:id/pause',
+    {
+      preHandler: app.authorize(['admin', 'operator']),
+    },
+    async (req) => {
+      const { id } = req.params as { id: string };
 
-    return reply.code(202).send(execution);
-  });
+      await jobDefService.pauseJobDefinition(req.tenantId, req.userId, id);
 
-  app.post('/:id/pause', {
-    preHandler: app.authorize(['admin', 'operator']),
-  }, async (req) => {
-    const { id } = req.params as { id: string };
-    const repo = new ScopedRepository(prisma, req.tenantId);
-    const def = await repo.jobDefinitions().findFirst({
-      where: { id, type: 'recurring' },
-    });
-    if (!def) throw new AtlasError('NOT_FOUND', 'Recurring job definition not found', 404);
+      return { paused: true };
+    },
+  );
 
-    await prisma.jobDefinition.update({
-      where: { id },
-      data: { isActive: false, updatedAt: new Date() },
-    });
+  app.post(
+    '/:id/resume',
+    {
+      preHandler: app.authorize(['admin', 'operator']),
+    },
+    async (req) => {
+      const { id } = req.params as { id: string };
 
-    await auditLog({
-      tenantId: req.tenantId,
-      actorId: req.userId,
-      action: 'job.paused',
-      entityType: 'job_definition',
-      entityId: id,
-    });
+      await jobDefService.resumeJobDefinition(req.tenantId, req.userId, id);
 
-    return { paused: true };
-  });
-
-  app.post('/:id/resume', {
-    preHandler: app.authorize(['admin', 'operator']),
-  }, async (req) => {
-    const { id } = req.params as { id: string };
-    const repo = new ScopedRepository(prisma, req.tenantId);
-    const def = await repo.jobDefinitions().findFirst({
-      where: { id, type: 'recurring' },
-    });
-    if (!def) throw new AtlasError('NOT_FOUND', 'Recurring job definition not found', 404);
-
-    await prisma.jobDefinition.update({
-      where: { id },
-      data: { isActive: true, updatedAt: new Date() },
-    });
-
-    await auditLog({
-      tenantId: req.tenantId,
-      actorId: req.userId,
-      action: 'job.resumed',
-      entityType: 'job_definition',
-      entityId: id,
-    });
-
-    return { resumed: true };
-  });
+      return { resumed: true };
+    },
+  );
 }

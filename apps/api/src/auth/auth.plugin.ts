@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin';
 import { FastifyInstance, FastifyRequest } from 'fastify';
-import { prisma } from '@atlas/db';
-import { AtlasError } from '@atlas/shared';
+import { prisma } from '@dispatch/db';
+import { DispatchError } from '@dispatch/shared';
 import { sha256 } from './auth.crypto.js';
 
 declare module 'fastify' {
@@ -23,7 +23,7 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      throw new AtlasError('AUTHENTICATION_ERROR', 'Missing Authorization header', 401);
+      throw new DispatchError('AUTHENTICATION_ERROR', 'Missing Authorization header', 401);
     }
 
     // --- JWT Bearer token ---
@@ -37,9 +37,9 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : '';
         if (message.includes('expired')) {
-          throw new AtlasError('AUTHENTICATION_ERROR', 'Token has expired', 401, { code: 'TOKEN_EXPIRED' });
+          throw new DispatchError('AUTHENTICATION_ERROR', 'Token has expired', 401, { code: 'TOKEN_EXPIRED' });
         }
-        throw new AtlasError('AUTHENTICATION_ERROR', 'Invalid or missing token', 401);
+        throw new DispatchError('AUTHENTICATION_ERROR', 'Invalid or missing token', 401);
       }
       return;
     }
@@ -48,15 +48,15 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
     if (authHeader.startsWith('Api-Key ')) {
       const raw = authHeader.slice('Api-Key '.length).trim();
       if (!raw.startsWith('atk_')) {
-        throw new AtlasError('AUTHENTICATION_ERROR', 'Invalid API key format', 401);
+        throw new DispatchError('AUTHENTICATION_ERROR', 'Invalid API key format', 401);
       }
       const hash = sha256(raw);
       const apiKey = await prisma.apiKey.findUnique({ where: { keyHash: hash } });
       if (!apiKey) {
-        throw new AtlasError('AUTHENTICATION_ERROR', 'Invalid API key', 401);
+        throw new DispatchError('AUTHENTICATION_ERROR', 'Invalid API key', 401);
       }
       if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
-        throw new AtlasError('AUTHENTICATION_ERROR', 'API key has expired', 401);
+        throw new DispatchError('AUTHENTICATION_ERROR', 'API key has expired', 401);
       }
       // Update lastUsedAt without blocking the request
       void prisma.apiKey.update({
@@ -72,13 +72,13 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
       return;
     }
 
-    throw new AtlasError('AUTHENTICATION_ERROR', 'Unsupported authorization scheme', 401);
+    throw new DispatchError('AUTHENTICATION_ERROR', 'Unsupported authorization scheme', 401);
   });
 
   app.decorate('authorize', (roles: string[]) => {
     return async (req: FastifyRequest) => {
       if (!roles.includes(req.userRole)) {
-        throw new AtlasError('AUTHORIZATION_ERROR', 'Insufficient permissions', 403);
+        throw new DispatchError('AUTHORIZATION_ERROR', 'Insufficient permissions', 403);
       }
     };
   });

@@ -1,4 +1,4 @@
-name: CI
+name: Dispatcher CI
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
           version: 10.10.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
@@ -32,7 +32,7 @@ jobs:
           version: 10.10.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:integration
@@ -46,14 +46,14 @@ jobs:
           version: 10.10.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: docker-compose up -d
+      - run: docker compose up -d
       - run: sleep 15
       - run: pnpm test:e2e
-      - run: docker-compose down -v
+      - run: docker compose down -v
 
   build:
     runs-on: ubuntu-latest
@@ -64,10 +64,10 @@ jobs:
           version: 10.10.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: docker build -f infra/docker/Dockerfile.api -t atlas-api .
-      - run: docker build -f infra/docker/Dockerfile.worker -t atlas-worker .
-      - run: docker build -f infra/docker/Dockerfile.scheduler -t atlas-scheduler .
+      - run: docker build -f infra/docker/Dockerfile.api -t dispatcher-api .
+      - run: docker build -f infra/docker/Dockerfile.worker -t dispatcher-worker .
+      - run: docker build -f infra/docker/Dockerfile.scheduler -t dispatcher-scheduler .

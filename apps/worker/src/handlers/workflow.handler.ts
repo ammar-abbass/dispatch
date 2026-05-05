@@ -1,7 +1,7 @@
 import { Job } from 'bullmq';
-import { prisma } from '@atlas/db';
-import { createLogger } from '@atlas/logger';
-import { JobPayload } from '@atlas/queue';
+import { prisma } from '@dispatch/db';
+import { createLogger } from '@dispatch/logger';
+import { JobPayload } from '@dispatch/queue';
 import { jobsCompletedCounter, jobDurationHistogram } from '../metrics.js';
 
 export async function workflowJobHandler(job: Job<JobPayload>): Promise<void> {
@@ -45,7 +45,7 @@ export async function workflowJobHandler(job: Job<JobPayload>): Promise<void> {
   logger.info({ durationSec }, 'Workflow completed');
 }
 
-import { WorkflowStepPayload } from '@atlas/queue';
+import { WorkflowStepPayload } from '@dispatch/queue';
 import { classifyFailure } from '../failure-classifier.js';
 
 export async function workflowStepHandler(job: Job<WorkflowStepPayload>): Promise<void> {

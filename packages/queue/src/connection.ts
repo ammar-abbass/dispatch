@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis';
-import { env } from '@atlas/config';
+import { env } from '@dispatch/config';
 
 export const redis = new Redis(env.REDIS_URL, {
   maxRetriesPerRequest: null,

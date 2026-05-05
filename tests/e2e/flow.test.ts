@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { GenericContainer, Wait } from 'testcontainers';
-import Fastify from 'fastify';
-import { PrismaClient, setPrisma } from '@atlas/db';
+import Fastify, { FastifyInstance } from 'fastify';
+import { PrismaClient, setPrisma } from '@dispatch/db';
 import IORedis from 'ioredis';
 import jwt from '@fastify/jwt';
 import { jobDefinitionRoutes } from '../../apps/api/src/job-definitions/job-definition.routes.js';
 import { executionRoutes } from '../../apps/api/src/executions/execution.routes.js';
 import { healthRoutes } from '../../apps/api/src/health/health.routes.js';
 import { errorHandler } from '../../apps/api/src/error-handler.js';
-
+import { validatorCompiler, serializerCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
 describe('E2E Flow', () => {
   let postgresContainer: Awaited<ReturnType<typeof GenericContainer.prototype.start>>;
   let redisContainer: Awaited<ReturnType<typeof GenericContainer.prototype.start>>;
   let prisma: PrismaClient;
   let redis: IORedis;
-  let app: ReturnType<typeof Fastify>;
+  let app: FastifyInstance;
   let tenantId: string;
   let token: string;
 
@@ -35,7 +35,7 @@ describe('E2E Flow', () => {
     const redisPort = redisContainer.getMappedPort(6379);
     const redisHost = redisContainer.getHost();
 
-    process.env.DATABASE_URL = `postgresql://test:test@${pgHost}:${pgPort}/atlas_test`;
+    process.env.DATABASE_URL = `postgresql://test:test@${pgHost}:${pgPort}/dispatch_test`;
     process.env.REDIS_URL = `redis://${redisHost}:${redisPort}`;
     process.env.JWT_SECRET = 'test-secret';
 
@@ -52,6 +52,7 @@ describe('E2E Flow', () => {
     const { Pool } = await import('pg');
     const { PrismaPg } = await import('@prisma/adapter-pg');
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    (globalThis as any).__e2e_pool = pool;
     const adapter = new PrismaPg(pool);
 
     prisma = new PrismaClient({ adapter });
@@ -69,7 +70,11 @@ describe('E2E Flow', () => {
       data: { tenantId, email: 'e2e@atlas.dev', role: 'admin' },
     });
 
+
     app = Fastify({ logger: false });
+    app.setValidatorCompiler(validatorCompiler);
+    app.setSerializerCompiler(serializerCompiler);
+    app.withTypeProvider<ZodTypeProvider>();
     app.setErrorHandler(errorHandler);
     await app.register(jwt, { secret: process.env.JWT_SECRET });
 
@@ -95,6 +100,10 @@ describe('E2E Flow', () => {
   afterAll(async () => {
     await app.close();
     await prisma.$disconnect();
+    // Use global pool variable to end
+    if ((globalThis as any).__e2e_pool) {
+      await (globalThis as any).__e2e_pool.end();
+    }
     await redis.quit();
     await postgresContainer.stop();
     await redisContainer.stop();

@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:18-alpine
     environment:
-      POSTGRES_USER: atlas
-      POSTGRES_PASSWORD: atlas
-      POSTGRES_DB: atlas
+      POSTGRES_USER: dispatch
+      POSTGRES_PASSWORD: dispatch
+      POSTGRES_DB: dispatch
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U atlas -d atlas" ]
+      test: [ "CMD-SHELL", "pg_isready -U dispatch -d dispatch" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,7 +35,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://atlas:atlas@postgres:5432/atlas
+      DATABASE_URL: postgresql://dispatch:dispatch@postgres:5432/dispatch
       REDIS_URL: redis://redis:6379
       JWT_SECRET: dev-jwt-secret-change-in-production
     depends_on:
@@ -50,7 +50,7 @@ services:
       dockerfile: infra/docker/Dockerfile.worker
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://atlas:atlas@postgres:5432/atlas
+      DATABASE_URL: postgresql://dispatch:dispatch@postgres:5432/dispatch
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
@@ -64,7 +64,7 @@ services:
       dockerfile: infra/docker/Dockerfile.scheduler
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://atlas:atlas@postgres:5432/atlas
+      DATABASE_URL: postgresql://dispatch:dispatch@postgres:5432/dispatch
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:

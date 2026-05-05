@@ -7,7 +7,7 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'INTERNAL_ERROR';
 
-export class AtlasError extends Error {
+export class DispatchError extends Error {
   public readonly meta: Record<string, unknown> | undefined;
   constructor(
     public readonly code: ErrorCode,
@@ -16,7 +16,7 @@ export class AtlasError extends Error {
     meta?: Record<string, unknown>,
   ) {
     super(message);
-    this.name = 'AtlasError';
+    this.name = 'DispatchError';
     this.meta = meta;
   }
 }

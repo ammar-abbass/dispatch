@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/scheduler",
+  "name": "@dispatch/scheduler",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -9,10 +9,10 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
-    "@atlas/config": "workspace:*",
-    "@atlas/db": "workspace:*",
-    "@atlas/logger": "workspace:*",
-    "@atlas/queue": "workspace:*",
+    "@dispatch/config": "workspace:*",
+    "@dispatch/db": "workspace:*",
+    "@dispatch/logger": "workspace:*",
+    "@dispatch/queue": "workspace:*",
     "bullmq": "^5.76.4",
     "ioredis": "^5.10.1",
     "nanoid": "^5.1.9",

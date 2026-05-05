@@ -1,8 +1,8 @@
 import { Worker } from 'bullmq';
-import { env } from '@atlas/config';
-import { rootLogger } from '@atlas/logger';
-import { redis, jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@atlas/queue';
-import { prisma } from '@atlas/db';
+import { env } from '@dispatch/config';
+import { rootLogger } from '@dispatch/logger';
+import { redis, jobsDefaultQueue, jobsWorkflowQueue, jobsDlqQueue } from '@dispatch/queue';
+import { prisma } from '@dispatch/db';
 import { defaultJobHandler } from './handlers/default.handler.js';
 import { jobsDeadLetteredCounter, workerHeartbeatGauge } from './metrics.js';
 

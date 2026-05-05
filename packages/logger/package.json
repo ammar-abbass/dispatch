@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/logger",
+  "name": "@dispatch/logger",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,7 +10,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@atlas/config": "workspace:*",
+    "@dispatch/config": "workspace:*",
     "pino": "^10.3.1",
     "pino-pretty": "^13.0.0"
   },

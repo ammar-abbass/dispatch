@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateCron } from './cron-validator.js';
-import { AtlasError } from '@atlas/shared';
+import { DispatchError } from '@dispatch/shared';
 
 describe('validateCron', () => {
   it('should accept valid cron expressions', () => {
@@ -9,12 +9,12 @@ describe('validateCron', () => {
   });
 
   it('should reject sub-minute wildcards', () => {
-    expect(() => validateCron('* * * * *')).toThrow(AtlasError);
-    expect(() => validateCron('* 9 * * *')).toThrow(AtlasError);
+    expect(() => validateCron('* * * * *')).toThrow(DispatchError);
+    expect(() => validateCron('* 9 * * *')).toThrow(DispatchError);
   });
 
   it('should reject invalid field counts', () => {
-    expect(() => validateCron('0 9 * *')).toThrow(AtlasError);
-    expect(() => validateCron('0 9 * * * *')).toThrow(AtlasError);
+    expect(() => validateCron('0 9 * *')).toThrow(DispatchError);
+    expect(() => validateCron('0 9 * * * *')).toThrow(DispatchError);
   });
 });

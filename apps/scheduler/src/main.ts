@@ -1,8 +1,8 @@
 import { setInterval } from 'timers/promises';
-import { prisma } from '@atlas/db';
-import { rootLogger } from '@atlas/logger';
-import { jobsDefaultQueue } from '@atlas/queue';
-import { env } from '@atlas/config';
+import { prisma } from '@dispatch/db';
+import { rootLogger } from '@dispatch/logger';
+import { jobsDefaultQueue } from '@dispatch/queue';
+import { env } from '@dispatch/config';
 import { nanoid } from 'nanoid';
 
 const logger = rootLogger.child({ service: 'scheduler' });

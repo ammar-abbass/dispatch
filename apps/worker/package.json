@@ -1,5 +1,5 @@
 {
-  "name": "@atlas/worker",
+  "name": "@dispatch/worker",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -10,11 +10,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@atlas/config": "workspace:*",
-    "@atlas/db": "workspace:*",
-    "@atlas/logger": "workspace:*",
-    "@atlas/queue": "workspace:*",
-    "@atlas/shared": "workspace:*",
+    "@dispatch/config": "workspace:*",
+    "@dispatch/db": "workspace:*",
+    "@dispatch/logger": "workspace:*",
+    "@dispatch/queue": "workspace:*",
+    "@dispatch/shared": "workspace:*",
     "bullmq": "^5.76.4",
     "ioredis": "^5.10.1",
     "prom-client": "^15.1.3"

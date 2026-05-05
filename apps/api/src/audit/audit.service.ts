@@ -1,4 +1,4 @@
-import { prisma } from '@atlas/db';
+import { prisma } from '@dispatch/db';
 
 export async function auditLog(params: {
   tenantId: string;

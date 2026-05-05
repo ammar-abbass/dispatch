@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { jobsDefaultQueue, jobsWorkflowQueue, jobsSchedulerQueue, jobsDlqQueue } from '@atlas/queue';
+import { jobsDefaultQueue, jobsWorkflowQueue, jobsSchedulerQueue, jobsDlqQueue } from '@dispatch/queue';
 import { queueDepthGauge, jobsActiveGauge } from '../metrics/metrics.js';
 
 export async function queueRoutes(app: FastifyInstance) {

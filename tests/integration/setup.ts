@@ -1,5 +1,5 @@
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
-import { PrismaClient } from '@atlas/db';
+import { PrismaClient } from '@dispatch/db';
 import IORedis from 'ioredis';
 
 let postgresContainer: StartedTestContainer;
@@ -29,7 +29,7 @@ export async function setupTestContainers() {
   const redisPort = redisContainer.getMappedPort(6379);
   const redisHost = redisContainer.getHost();
 
-  process.env.DATABASE_URL = `postgresql://test:test@${pgHost}:${pgPort}/atlas_test`;
+  process.env.DATABASE_URL = `postgresql://test:test@${pgHost}:${pgPort}/dispatch_test`;
   process.env.REDIS_URL = `redis://${redisHost}:${redisPort}`;
 
   // Push schema to the test database before creating the client

@@ -1,7 +1,7 @@
 import { PrismaClient } from '../src/generated/client/client.js';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { env } from '@atlas/config';
+import { env } from '@dispatch/config';
 import bcryptjs from 'bcryptjs';
 
 const connectionString = env.DATABASE_URL;
@@ -27,7 +27,7 @@ async function main() {
   const user = await prisma.user.create({
     data: {
       tenantId: tenant.id,
-      email: 'admin@atlas.dev',
+      email: 'admin@dispatch.dev',
       passwordHash,
       role: 'admin',
     },

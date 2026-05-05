@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '@atlas/db';
-import { redis } from '@atlas/queue';
+import { prisma } from '@dispatch/db';
+import { redis } from '@dispatch/queue';
 import { register, collectDefaultMetrics } from 'prom-client';
 import { apiRequestDurationHistogram } from '../metrics/metrics.js';
 

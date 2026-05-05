@@ -5,11 +5,15 @@ import jwt from '@fastify/jwt';
 import cookie from '@fastify/cookie';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
-import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
+import {
+  serializerCompiler,
+  validatorCompiler,
+  jsonSchemaTransform,
+} from 'fastify-type-provider-zod';
 import { nanoid } from 'nanoid';
-import { env } from '@atlas/config';
-import { rootLogger } from '@atlas/logger';
-import { redis } from '@atlas/queue';
+import { env } from '@dispatch/config';
+import { rootLogger } from '@dispatch/logger';
+import { redis } from '@dispatch/queue';
 import { errorHandler } from './error-handler.js';
 import { authPlugin } from './auth/auth.plugin.js';
 import { authRoutes } from './auth/auth.routes.js';
@@ -20,6 +24,7 @@ import { workerRoutes } from './workers/worker.routes.js';
 import { healthRoutes } from './health/health.routes.js';
 import { apiKeyRoutes } from './api-keys/api-key.routes.js';
 import { auditRoutes } from './audit/audit.routes.js';
+import { userRoutes } from './users/user.routes.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -47,7 +52,11 @@ await app.register(authPlugin);
 
 await app.register(swagger, {
   openapi: {
-    info: { title: 'Atlas API', version: '1.0.0', description: 'Distributed job scheduling platform' },
+    info: {
+      title: 'Atlas API',
+      version: '1.0.0',
+      description: 'Distributed job scheduling platform',
+    },
     components: {
       securitySchemes: {
         bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -76,6 +85,7 @@ await app.register(queueRoutes, { prefix: '/v1/queues' });
 await app.register(workerRoutes, { prefix: '/v1/workers' });
 await app.register(apiKeyRoutes, { prefix: '/v1/api-keys' });
 await app.register(auditRoutes, { prefix: '/v1/audit-logs' });
+await app.register(userRoutes, { prefix: '/v1/users' });
 
 async function start() {
   await app.ready();

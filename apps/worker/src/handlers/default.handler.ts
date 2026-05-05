@@ -1,7 +1,7 @@
 import { Job } from 'bullmq';
-import { prisma } from '@atlas/db';
-import { createLogger } from '@atlas/logger';
-import { JobPayload, WorkflowStepPayload } from '@atlas/queue';
+import { prisma } from '@dispatch/db';
+import { createLogger } from '@dispatch/logger';
+import { JobPayload, WorkflowStepPayload } from '@dispatch/queue';
 import { classifyFailure } from '../failure-classifier.js';
 import {
   jobsCompletedCounter,

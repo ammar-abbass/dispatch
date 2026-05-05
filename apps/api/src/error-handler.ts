@@ -1,6 +1,6 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
-import { AtlasError } from '@atlas/shared';
-import { rootLogger } from '@atlas/logger';
+import { DispatchError } from '@dispatch/shared';
+import { rootLogger } from '@dispatch/logger';
 
 const logger = rootLogger.child({ service: 'api' });
 
@@ -9,7 +9,7 @@ export function errorHandler(
   _request: FastifyRequest,
   reply: FastifyReply,
 ) {
-  if (error instanceof AtlasError) {
+  if (error instanceof DispatchError) {
     return reply.code(error.statusCode).send({
       error: {
         code: error.code,
