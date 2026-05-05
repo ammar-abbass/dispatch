@@ -15,12 +15,10 @@
     "@dispatch/queue": "workspace:*",
     "bullmq": "^5.76.4",
     "ioredis": "^5.10.1",
-    "nanoid": "^5.1.9",
-    "node-cron": "^3.0.3"
+    "nanoid": "^5.1.9"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
-    "@types/node-cron": "^3.0.11",
     "typescript": "^5.8.0",
     "tsx": "^4.19.0"
   }

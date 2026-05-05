@@ -1,4 +1,10 @@
 export { redis } from './connection.js';
-export { jobsDefaultQueue, jobsWorkflowQueue, jobsSchedulerQueue, jobsDlqQueue, allQueues, flowProducer } from './queues.js';
+export {
+  jobsDefaultQueue,
+  jobsWorkflowQueue,
+  jobsDlqQueue,
+  allQueues,
+  flowProducer,
+} from './queues.js';
 export { jobPayloadSchema, workflowStepPayloadSchema } from './schemas.js';
 export type { JobPayload, WorkflowStepPayload } from './schemas.js';

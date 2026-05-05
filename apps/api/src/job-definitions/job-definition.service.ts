@@ -18,7 +18,7 @@ export class JobDefinitionService {
       payloadSchema?: Record<string, unknown> | undefined;
       scheduleCron?: string | undefined;
       retryPolicy: { maxAttempts: number; backoff: 'fixed' | 'exponential'; delay: number };
-    }
+    },
   ) {
     if (data.type === 'recurring' && data.scheduleCron) {
       validateCron(data.scheduleCron);
@@ -39,7 +39,9 @@ export class JobDefinitionService {
       tenantId,
       name: data.name,
       type: data.type,
-      payloadSchema: data.payloadSchema ? (data.payloadSchema as Prisma.InputJsonValue) : Prisma.DbNull,
+      payloadSchema: data.payloadSchema
+        ? (data.payloadSchema as Prisma.InputJsonValue)
+        : Prisma.DbNull,
       scheduleCron: data.scheduleCron ?? null,
       retryPolicy: data.retryPolicy as Prisma.InputJsonValue,
     });
@@ -76,10 +78,12 @@ export class JobDefinitionService {
     id: string,
     data: {
       name?: string | undefined;
-      retryPolicy?: { maxAttempts: number; backoff: 'fixed' | 'exponential'; delay: number } | undefined;
+      retryPolicy?:
+        | { maxAttempts: number; backoff: 'fixed' | 'exponential'; delay: number }
+        | undefined;
       scheduleCron?: string | undefined;
       isActive?: boolean | undefined;
-    }
+    },
   ) {
     if (data.scheduleCron) {
       validateCron(data.scheduleCron);
@@ -92,7 +96,8 @@ export class JobDefinitionService {
     if (data.name !== undefined) dataToUpdate.name = data.name;
     if (data.scheduleCron !== undefined) dataToUpdate.scheduleCron = data.scheduleCron;
     if (data.isActive !== undefined) dataToUpdate.isActive = data.isActive;
-    if (data.retryPolicy !== undefined) dataToUpdate.retryPolicy = data.retryPolicy as Prisma.InputJsonValue;
+    if (data.retryPolicy !== undefined)
+      dataToUpdate.retryPolicy = data.retryPolicy as Prisma.InputJsonValue;
 
     const updated = await this.jobDefRepo.update(id, dataToUpdate);
 
@@ -128,16 +133,20 @@ export class JobDefinitionService {
     id: string,
     requestId?: string,
     idempotencyKeyInput?: string,
-    payloadInput?: Record<string, unknown>
+    payloadInput?: Record<string, unknown>,
   ) {
     const idempotencyKey = idempotencyKeyInput ?? nanoid();
 
     const def = await this.jobDefRepo.findFirst({ id, tenantId, isActive: true });
     if (!def) throw new DispatchError('NOT_FOUND', 'Job definition not found', 404);
 
-    const existingExecution = await this.jobDefRepo.findExecutionByKeys(idempotencyKey);
+    const existingExecution = await this.jobDefRepo.findExecutionByKeys(tenantId, idempotencyKey);
     if (existingExecution) {
-      throw new DispatchError('CONFLICT_ERROR', 'Execution already exists for this idempotency key', 409);
+      throw new DispatchError(
+        'CONFLICT_ERROR',
+        'Execution already exists for this idempotency key',
+        409,
+      );
     }
 
     const execution = await this.jobDefRepo.createExecution({
@@ -152,7 +161,7 @@ export class JobDefinitionService {
     const bullJobId = `${tenantId}:${def.id}:${idempotencyKey}`;
     const payload = payloadInput ?? {};
     const meta = { correlationId: requestId ?? nanoid(), triggeredBy: 'api' };
-    
+
     const jobOpts = {
       jobId: bullJobId,
       attempts: (def.retryPolicy as { maxAttempts: number }).maxAttempts,
@@ -166,7 +175,7 @@ export class JobDefinitionService {
 
     if (def.type === 'workflow') {
       const steps = (def.payloadSchema as Record<string, unknown>)?.steps as string[] | undefined;
-      
+
       let flowNode: any = {
         name: def.name,
         queueName: 'jobs-workflow',
@@ -183,7 +192,15 @@ export class JobDefinitionService {
           flowNode = {
             name: stepName,
             queueName: 'jobs-default', // execute steps on default queue
-            data: { executionId: execution.id, tenantId, jobDefinitionId: def.id, stepName, stepIndex: i, payload, meta },
+            data: {
+              executionId: execution.id,
+              tenantId,
+              jobDefinitionId: def.id,
+              stepName,
+              stepIndex: i,
+              payload,
+              meta,
+            },
             opts: { ...jobOpts, jobId: `${bullJobId}:step:${stepName}` },
             children: [flowNode],
           };
@@ -200,7 +217,7 @@ export class JobDefinitionService {
           payload,
           meta,
         },
-        jobOpts
+        jobOpts,
       );
     }
 

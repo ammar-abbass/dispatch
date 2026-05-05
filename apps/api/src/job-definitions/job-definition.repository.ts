@@ -30,9 +30,9 @@ export class JobDefinitionRepository {
     });
   }
 
-  async findExecutionByKeys(idempotencyKey: string) {
-    return this.prisma.jobExecution.findUnique({
-      where: { idempotencyKey },
+  async findExecutionByKeys(tenantId: string, idempotencyKey: string) {
+    return this.prisma.jobExecution.findFirst({
+      where: { idempotencyKey, tenantId },
     });
   }
 
