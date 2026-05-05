@@ -16,9 +16,10 @@ jobs:
           version: 10.10.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
@@ -32,9 +33,10 @@ jobs:
           version: 10.10.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
       - run: pnpm test:integration
 
   e2e:
@@ -46,7 +48,7 @@ jobs:
           version: 10.10.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
@@ -64,9 +66,10 @@ jobs:
           version: 10.10.0
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
       - run: pnpm build
       - run: docker build -f infra/docker/Dockerfile.api -t dispatcher-api .
       - run: docker build -f infra/docker/Dockerfile.worker -t dispatcher-worker .
