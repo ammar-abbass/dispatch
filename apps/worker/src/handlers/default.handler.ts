@@ -3,11 +3,7 @@ import { prisma } from '@dispatch/db';
 import { createLogger } from '@dispatch/logger';
 import { JobPayload, WorkflowStepPayload } from '@dispatch/queue';
 import { classifyFailure } from '../failure-classifier.js';
-import {
-  jobsCompletedCounter,
-  jobsFailedCounter,
-  jobDurationHistogram,
-} from '../metrics.js';
+import { jobsCompletedCounter, jobsFailedCounter, jobDurationHistogram } from '../metrics.js';
 
 import { workflowStepHandler } from './workflow.handler.js';
 
@@ -72,15 +68,20 @@ export async function defaultJobHandler(job: Job<JobPayload>): Promise<void> {
 
     jobsFailedCounter.inc({ queue: job.queueName, failure_type: failureType });
 
-    logger.warn({ attempt: job.attemptsMade + 1, failureType, errorMessage, durationSec }, 'Job failed');
+    logger.warn(
+      { attempt: job.attemptsMade + 1, failureType, errorMessage, durationSec },
+      'Job failed',
+    );
 
-    const exhausted = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+    // Note: attemptsMade is already incremented by BullMQ for the current attempt.
+    const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1);
 
     await prisma.jobExecution.update({
       where: { id: executionId },
       data: {
         status: exhausted ? 'failed' : 'retrying',
         errorMessage,
+        failureType,
         finishedAt: exhausted ? new Date() : null,
       },
     });
@@ -99,7 +100,10 @@ export async function defaultJobHandler(job: Job<JobPayload>): Promise<void> {
   }
 }
 
-async function simulateWork(jobDefinitionId: string, _payload: Record<string, unknown>): Promise<void> {
+async function simulateWork(
+  jobDefinitionId: string,
+  _payload: Record<string, unknown>,
+): Promise<void> {
   // Placeholder for actual job logic
   // In production, this would dispatch to a registry of handlers by jobDefinitionId
   await new Promise((resolve) => setTimeout(resolve, 100));

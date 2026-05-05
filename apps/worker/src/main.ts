@@ -25,14 +25,39 @@ const workflowWorker = new Worker('jobs-workflow', workflowJobHandler, {
   maxStalledCount: 2,
 });
 
-const dlqWorker = new Worker('jobs-dlq', async (job) => {
-  logger.error({ jobId: job.id, payload: job.data }, 'Dead-lettered job received');
-}, {
-  connection: redis,
-  concurrency: 1,
-  stalledInterval: 30_000,
-  maxStalledCount: 1,
-});
+const dlqWorker = new Worker(
+  'jobs-dlq',
+  async (job) => {
+    const { executionId, tenantId } = job.data as { executionId?: string; tenantId?: string };
+    logger.error({ jobId: job.id, executionId }, 'Dead-lettered job received');
+
+    if (executionId && tenantId) {
+      await prisma.jobExecution.update({
+        where: { id: executionId },
+        data: {
+          status: 'dead_lettered',
+          finishedAt: new Date(),
+        },
+      });
+
+      await prisma.executionLog.create({
+        data: {
+          executionId,
+          tenantId,
+          level: 'error',
+          message: 'Job moved to dead-letter queue after exhausting all retries',
+          metadata: { jobId: job.id, queue: job.queueName },
+        },
+      });
+    }
+  },
+  {
+    connection: redis,
+    concurrency: 1,
+    stalledInterval: 30_000,
+    maxStalledCount: 1,
+  },
+);
 
 // Heartbeat
 const heartbeatInterval = setInterval(() => {
@@ -50,11 +75,16 @@ const heartbeatInterval = setInterval(() => {
       if (exhausted) {
         logger.error({ jobId: job.id, error: err.message }, 'Job exhausted retries, moving to DLQ');
         jobsDeadLetteredCounter.inc({ queue: worker.name });
-        jobsDlqQueue.add(job.name, job.data, { ...(job.id ? { jobId: job.id } : {}) }).catch((e: Error) => {
-          logger.error({ err: e }, 'Failed to move job to DLQ');
-        });
+        jobsDlqQueue
+          .add(job.name, job.data, { ...(job.id ? { jobId: job.id } : {}) })
+          .catch((e: Error) => {
+            logger.error({ err: e }, 'Failed to move job to DLQ');
+          });
       } else {
-        logger.warn({ jobId: job.id, attempt: job.attemptsMade + 1, error: err.message }, 'Job failed, will retry');
+        logger.warn(
+          { jobId: job.id, attempt: job.attemptsMade + 1, error: err.message },
+          'Job failed, will retry',
+        );
       }
     }
   });
