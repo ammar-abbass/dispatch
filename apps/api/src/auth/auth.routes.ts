@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { DispatchError } from '@dispatch/shared';
 import { env } from '@dispatch/config';
+import { checkIpRateLimit } from '../rate-limit/rate-limit.service.js';
 import { AuthService } from './auth.service.js';
 
 const COOKIE_NAME = 'refresh_token';
@@ -31,6 +32,7 @@ export async function authRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
+      await checkIpRateLimit(req, 'auth:signup');
       const { email, password, tenantName } = signupSchema.parse(req.body);
 
       const { user, rawRefreshToken } = await AuthService.signup(email, password, tenantName);
@@ -67,6 +69,7 @@ export async function authRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
+      await checkIpRateLimit(req, 'auth:login');
       const { email, password } = loginSchema.parse(req.body);
 
       const { user, rawRefreshToken } = await AuthService.login(email, password);

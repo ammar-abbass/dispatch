@@ -7,6 +7,7 @@ import { DispatchError } from '@dispatch/shared';
  *
  * - JWT requests: rate limited per tenantId
  * - API key requests: rate limited per apiKeyId
+ * - Public endpoints (auth): rate limited per IP address
  *
  * Window: 60 seconds. Limits vary by action.
  */
@@ -21,6 +22,8 @@ const ACTION_LIMITS: Record<string, number> = {
   'executions:retry': 30,
   'api-keys:create': 10,
   'api-keys:delete': 10,
+  'auth:login': 10,
+  'auth:signup': 5,
   default: 100,
 };
 
@@ -52,6 +55,39 @@ export async function checkRateLimit(req: FastifyRequest, action: string): Promi
   const count = (results?.[2]?.[1] as number) ?? 0;
 
   if (count > limit) {
-    throw new DispatchError('RATE_LIMITED', `Rate limit exceeded for ${action}. Try again later.`, 429);
+    throw new DispatchError(
+      'RATE_LIMITED',
+      `Rate limit exceeded for ${action}. Try again later.`,
+      429,
+    );
+  }
+}
+
+/**
+ * IP-based rate limiting for public endpoints (login, signup).
+ * Uses the same sliding window algorithm but keyed by client IP.
+ */
+export async function checkIpRateLimit(req: FastifyRequest, action: string): Promise<void> {
+  const ip = req.ip ?? 'unknown';
+  const limit = ACTION_LIMITS[action] ?? ACTION_LIMITS['default'] ?? 100;
+  const now = Date.now();
+  const windowStart = now - WINDOW_MS;
+  const redisKey = `ratelimit:ip:${ip}:${action}`;
+
+  const pipeline = redis.pipeline();
+  pipeline.zadd(redisKey, now, String(now));
+  pipeline.zremrangebyscore(redisKey, 0, windowStart);
+  pipeline.zcard(redisKey);
+  pipeline.expire(redisKey, Math.ceil(WINDOW_MS / 1000));
+  const results = await pipeline.exec();
+
+  const count = (results?.[2]?.[1] as number) ?? 0;
+
+  if (count > limit) {
+    throw new DispatchError(
+      'RATE_LIMITED',
+      `Rate limit exceeded for ${action}. Try again later.`,
+      429,
+    );
   }
 }

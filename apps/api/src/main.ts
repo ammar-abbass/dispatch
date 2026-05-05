@@ -45,7 +45,10 @@ app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 app.setErrorHandler(errorHandler);
 
-await app.register(cors);
+await app.register(cors, {
+  origin: env.NODE_ENV === 'production' ? false : true,
+  credentials: true,
+});
 await app.register(helmet);
 await app.register(cookie);
 await app.register(jwt, { secret: env.JWT_SECRET });
