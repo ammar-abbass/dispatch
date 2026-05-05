@@ -3,7 +3,11 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* turbo.json tsconfig.json .prettierrc eslint.config.js ./
 COPY apps/api/package.json apps/api/tsconfig.json ./apps/api/
-COPY packages/*/package.json packages/*/tsconfig.json ./packages/*/
+COPY packages/config/package.json packages/config/tsconfig.json ./packages/config/
+COPY packages/db/package.json packages/db/tsconfig.json ./packages/db/
+COPY packages/logger/package.json packages/logger/tsconfig.json ./packages/logger/
+COPY packages/queue/package.json packages/queue/tsconfig.json ./packages/queue/
+COPY packages/shared/package.json packages/shared/tsconfig.json ./packages/shared/
 RUN pnpm install
 COPY . .
 RUN pnpm --filter './packages/**' build

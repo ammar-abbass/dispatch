@@ -31,6 +31,29 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: dispatch
+          POSTGRES_USER: dispatch
+          POSTGRES_PASSWORD: dispatch
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -44,9 +67,36 @@ jobs:
       - run: pnpm db:generate
       - run: pnpm build
       - run: pnpm test:integration
+        env:
+          DATABASE_URL: postgresql://dispatch:dispatch@localhost:5432/dispatch
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-key
 
   e2e:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: dispatch
+          POSTGRES_USER: dispatch
+          POSTGRES_PASSWORD: dispatch
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -60,6 +110,10 @@ jobs:
       - run: pnpm db:generate
       - run: pnpm build
       - run: pnpm test:e2e
+        env:
+          DATABASE_URL: postgresql://dispatch:dispatch@localhost:5432/dispatch
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-key
 
   build:
     runs-on: ubuntu-latest
