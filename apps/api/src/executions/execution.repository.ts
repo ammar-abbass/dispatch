@@ -1,10 +1,8 @@
-import { PrismaClient, Prisma } from '@dispatch/db';
+import { prisma, Prisma } from '@dispatch/db';
 
 export class ExecutionRepository {
-  constructor(private prisma: PrismaClient) {}
-
   async findMany(where: Prisma.JobExecutionWhereInput, limit: number) {
-    return this.prisma.jobExecution.findMany({
+    return prisma.jobExecution.findMany({
       where,
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -13,20 +11,20 @@ export class ExecutionRepository {
   }
 
   async count(where: Prisma.JobExecutionWhereInput) {
-    return this.prisma.jobExecution.count({ where });
+    return prisma.jobExecution.count({ where });
   }
 
   async findFirst<T extends Prisma.JobExecutionInclude>(
     where: Prisma.JobExecutionWhereInput,
-    include?: T
+    include?: T,
   ): Promise<Prisma.JobExecutionGetPayload<{ include: T }> | null> {
     const args: Prisma.JobExecutionFindFirstArgs = { where };
     if (include) args.include = include;
-    return this.prisma.jobExecution.findFirst(args) as any;
+    return prisma.jobExecution.findFirst(args) as any;
   }
 
   async findManyLogs(where: Prisma.ExecutionLogWhereInput, limit: number) {
-    return this.prisma.executionLog.findMany({
+    return prisma.executionLog.findMany({
       where,
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -34,22 +32,22 @@ export class ExecutionRepository {
   }
 
   async countLogs(where: Prisma.ExecutionLogWhereInput) {
-    return this.prisma.executionLog.count({ where });
+    return prisma.executionLog.count({ where });
   }
 
   async update(id: string, data: Prisma.JobExecutionUpdateInput) {
-    return this.prisma.jobExecution.update({
+    return prisma.jobExecution.update({
       where: { id },
       data,
     });
   }
 
   async create(data: Prisma.JobExecutionUncheckedCreateInput) {
-    return this.prisma.jobExecution.create({ data });
+    return prisma.jobExecution.create({ data });
   }
 
   async findManySteps(where: Prisma.JobStepWhereInput) {
-    return this.prisma.jobStep.findMany({
+    return prisma.jobStep.findMany({
       where,
       orderBy: { startedAt: 'asc' },
     });

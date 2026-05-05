@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { ScopedRepository, Prisma } from '@dispatch/db';
+import { Prisma } from '@dispatch/db';
 import { DispatchError, paginate } from '@dispatch/shared';
 import { jobsDefaultQueue, flowProducer } from '@dispatch/queue';
 import { nanoid } from 'nanoid';
@@ -9,7 +9,6 @@ import { validateCron } from '../validation/cron-validator.js';
 import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
 import { JobDefinitionService } from './job-definition.service.js';
 import { JobDefinitionRepository } from './job-definition.repository.js';
-import { prisma } from '@dispatch/db';
 
 const createSchema = z
   .object({
@@ -43,8 +42,7 @@ const updateSchema = z
 export async function jobDefinitionRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
-  const jobDefRepo = new JobDefinitionRepository(prisma);
-  const jobDefService = new JobDefinitionService(jobDefRepo);
+  const jobDefService = new JobDefinitionService(new JobDefinitionRepository());
 
   app.post(
     '/',

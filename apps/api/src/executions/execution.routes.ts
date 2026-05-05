@@ -4,109 +4,136 @@ import { paginate } from '@dispatch/shared';
 import { checkRateLimit } from '../rate-limit/rate-limit.service.js';
 import { ExecutionService } from './execution.service.js';
 import { ExecutionRepository } from './execution.repository.js';
-import { prisma } from '@dispatch/db';
 
 export async function executionRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
-  const executionRepo = new ExecutionRepository(prisma);
-  const executionService = new ExecutionService(executionRepo);
+  const executionService = new ExecutionService(new ExecutionRepository());
 
-  app.get('/', {
-    schema: {
-      tags: ['Executions'],
-      summary: 'List job executions',
-      querystring: z.object({
-        status: z.string().optional(),
-        definitionId: z.string().uuid().optional(),
-        cursor: z.string().optional(),
-        limit: z.string().optional(),
-      }),
+  app.get(
+    '/',
+    {
+      schema: {
+        tags: ['Executions'],
+        summary: 'List job executions',
+        querystring: z.object({
+          status: z.string().optional(),
+          definitionId: z.string().uuid().optional(),
+          cursor: z.string().optional(),
+          limit: z.string().optional(),
+        }),
+      },
+      preHandler: app.authorize(['admin', 'operator', 'viewer']),
     },
-    preHandler: app.authorize(['admin', 'operator', 'viewer']),
-  }, async (req) => {
-    const { status, definitionId, limit: limitStr = '20' } = req.query as Record<string, string>;
-    const limit = Math.min(Number(limitStr), 100);
+    async (req) => {
+      const { status, definitionId, limit: limitStr = '20' } = req.query as Record<string, string>;
+      const limit = Math.min(Number(limitStr), 100);
 
-    const { items, total } = await executionService.listExecutions(req.tenantId, limit, status, definitionId);
+      const { items, total } = await executionService.listExecutions(
+        req.tenantId,
+        limit,
+        status,
+        definitionId,
+      );
 
-    return paginate(items, total, limit);
-  });
-
-  app.get('/:id', {
-    schema: {
-      tags: ['Executions'],
-      summary: 'Get execution details',
-      params: z.object({ id: z.string().uuid() }),
+      return paginate(items, total, limit);
     },
-    preHandler: app.authorize(['admin', 'operator', 'viewer']),
-  }, async (req) => {
-    const { id } = req.params as { id: string };
-    return executionService.getExecution(req.tenantId, id);
-  });
+  );
 
-  app.get('/:id/logs', {
-    schema: {
-      tags: ['Executions'],
-      summary: 'Get execution logs',
-      params: z.object({ id: z.string().uuid() }),
-      querystring: z.object({
-        cursor: z.string().optional(),
-        limit: z.string().optional(),
-      }),
+  app.get(
+    '/:id',
+    {
+      schema: {
+        tags: ['Executions'],
+        summary: 'Get execution details',
+        params: z.object({ id: z.string().uuid() }),
+      },
+      preHandler: app.authorize(['admin', 'operator', 'viewer']),
     },
-    preHandler: app.authorize(['admin', 'operator', 'viewer']),
-  }, async (req) => {
-    const { id } = req.params as { id: string };
-    const { limit: limitStr = '50' } = req.query as Record<string, string>;
-    const limit = Math.min(Number(limitStr), 200);
-
-    const { items, total } = await executionService.getExecutionLogs(req.tenantId, id, limit);
-
-    return paginate(items, total, limit);
-  });
-
-  app.post('/:id/cancel', {
-    schema: {
-      tags: ['Executions'],
-      summary: 'Cancel an execution',
-      params: z.object({ id: z.string().uuid() }),
+    async (req) => {
+      const { id } = req.params as { id: string };
+      return executionService.getExecution(req.tenantId, id);
     },
-    preHandler: app.authorize(['admin', 'operator']),
-  }, async (req) => {
-    await checkRateLimit(req, 'executions:cancel');
-    const { id } = req.params as { id: string };
+  );
 
-    return executionService.cancelExecution(req.tenantId, req.userId, id);
-  });
-
-  app.post('/:id/retry', {
-    schema: {
-      tags: ['Executions'],
-      summary: 'Retry a failed execution',
-      params: z.object({ id: z.string().uuid() }),
+  app.get(
+    '/:id/logs',
+    {
+      schema: {
+        tags: ['Executions'],
+        summary: 'Get execution logs',
+        params: z.object({ id: z.string().uuid() }),
+        querystring: z.object({
+          cursor: z.string().optional(),
+          limit: z.string().optional(),
+        }),
+      },
+      preHandler: app.authorize(['admin', 'operator', 'viewer']),
     },
-    preHandler: app.authorize(['admin', 'operator']),
-  }, async (req) => {
-    await checkRateLimit(req, 'executions:retry');
-    const { id } = req.params as { id: string };
+    async (req) => {
+      const { id } = req.params as { id: string };
+      const { limit: limitStr = '50' } = req.query as Record<string, string>;
+      const limit = Math.min(Number(limitStr), 200);
 
-    return executionService.retryExecution(req.tenantId, req.userId, id, req.requestId);
-  });
+      const { items, total } = await executionService.getExecutionLogs(req.tenantId, id, limit);
+
+      return paginate(items, total, limit);
+    },
+  );
+
+  app.post(
+    '/:id/cancel',
+    {
+      schema: {
+        tags: ['Executions'],
+        summary: 'Cancel an execution',
+        params: z.object({ id: z.string().uuid() }),
+      },
+      preHandler: app.authorize(['admin', 'operator']),
+    },
+    async (req) => {
+      await checkRateLimit(req, 'executions:cancel');
+      const { id } = req.params as { id: string };
+
+      return executionService.cancelExecution(req.tenantId, req.userId, id);
+    },
+  );
+
+  app.post(
+    '/:id/retry',
+    {
+      schema: {
+        tags: ['Executions'],
+        summary: 'Retry a failed execution',
+        params: z.object({ id: z.string().uuid() }),
+      },
+      preHandler: app.authorize(['admin', 'operator']),
+    },
+    async (req) => {
+      await checkRateLimit(req, 'executions:retry');
+      const { id } = req.params as { id: string };
+
+      return executionService.retryExecution(req.tenantId, req.userId, id, req.requestId);
+    },
+  );
 
   /** GET /v1/executions/:id/steps — list steps for a workflow execution */
-  app.get('/:id/steps', {
-    schema: {
-      tags: ['Executions'],
-      summary: 'List steps for a workflow execution',
-      params: z.object({ id: z.string().uuid() }),
+  app.get(
+    '/:id/steps',
+    {
+      schema: {
+        tags: ['Executions'],
+        summary: 'List steps for a workflow execution',
+        params: z.object({ id: z.string().uuid() }),
+      },
+      preHandler: app.authorize(['admin', 'operator', 'viewer']),
     },
-    preHandler: app.authorize(['admin', 'operator', 'viewer']),
-  }, async (req) => {
-    const { id } = req.params as { id: string };
+    async (req) => {
+      const { id } = req.params as { id: string };
 
-    const steps = await executionService.getExecutionSteps(req.tenantId, id);
+      const steps = await executionService.getExecutionSteps(req.tenantId, id);
 
-    return { data: steps, meta: { total: steps.length } };
-  });
+      return { data: steps, meta: { total: steps.length } };
+    },
+  );
 }
