@@ -1,17 +1,54 @@
+# Dependencies
 node_modules
-npm-debug.log
+**/node_modules/**
+.pnpm-store
+**/.pnpm-store/**
+
+# Build outputs
+dist
+**/dist/**
+build
+**/build/**
+*.tsbuildinfo
+**/*.tsbuildinfo
+*.log
+
+# Docker
 Dockerfile
+Dockerfile.*
+docker-compose*.yml
 .dockerignore
+
+# Git
 .git
 .gitignore
+
+# Env & secrets
 .env
 .env.*
-dist
-coverage
-.turbo
-prompt.md
-*.zip
+*.pem
+*.key
+
+# IDE & OS
+.idea
+.vscode
+*.swp
 .DS_Store
-tests
-docs
+.turbo
+
+# Docs & tests (optional, if not needed in image)
+docs/
+tests/
+**/*.test.ts
+**/*.spec.ts
+coverage/
+
+# Misc
+*.zip
+*.tar.gz
+prompt.md
 spec.md
+README.md
+
+# Logs
+npm-debug.log

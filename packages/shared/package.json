@@ -5,9 +5,9 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "dev": "tsc --watch"
+    "build": "pnpm exec tsc",
+    "typecheck": "pnpm exec tsc --noEmit",
+    "dev": "pnpm exec tsc --watch"
   },
   "devDependencies": {
     "typescript": "^5.8.0"

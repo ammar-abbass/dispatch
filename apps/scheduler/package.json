@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "pnpm exec tsc",
+    "typecheck": "pnpm exec tsc --noEmit",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js"
   },

@@ -27,6 +27,17 @@ services:
       timeout: 5s
       retries: 5
 
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.migrate
+    environment:
+      DATABASE_URL: postgresql://dispatch:dispatch@postgres:5432/dispatch
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   api:
     build:
       context: .
@@ -43,6 +54,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: [ "CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1" ]
       interval: 10s
@@ -50,6 +63,7 @@ services:
       retries: 3
       start_period: 5s
     restart: unless-stopped
+
 
   worker:
     build:
@@ -59,11 +73,14 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://dispatch:dispatch@postgres:5432/dispatch
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: [ "CMD-SHELL", "ps aux | grep '[n]ode apps/worker/dist/main.js' || exit 1" ]
       interval: 10s
@@ -80,11 +97,14 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://dispatch:dispatch@postgres:5432/dispatch
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: [ "CMD-SHELL", "ps aux | grep '[n]ode apps/scheduler/dist/main.js' || exit 1" ]
       interval: 10s
